@@ -22,9 +22,126 @@ See also:
 
 ---
 
-## Component Implementation Approach
+## Component Implementation Approaches
 
-### Primary Approach: Functional Components + memo() Wrapper
+### Preferred Approach: Unified Component-as-Case-Class
+
+**Concept**: Define components as case classes where the fields are the props and a `render` method defines the output. This unifies the component and its props into a single definition.
+
+**How it works**:
+
+```scala
+// Single definition - component IS its props
+case class Button(
+  label: String,
+  disabled: Boolean = false,
+  className: ClassName = ClassName.empty,
+  children: Children = Children.empty
+):
+  def render: VNode =
+    button(
+      disabled := disabled,
+      className := className,
+      children,
+      label
+    )
+
+// Companion extends ComponentCompanion for modifier support
+object Button extends ComponentCompanion[Button]
+```
+
+**Usage**:
+
+```scala
+// Identical syntax to HTML elements!
+Button(
+  Button.label := "Click me",
+  Button.disabled := true,
+  cls := "btn",
+  cls := "btn-primary",
+  span("Icon"),
+  "Button text"
+)
+
+// Or with imports
+import Button.*
+Button(
+  label := "Click me",
+  disabled := true,
+  cls := "btn",
+  span("Icon")
+)
+```
+
+**Advantages**:
+
+- **Single definition point**: Props and component are unified - the case class fields ARE the props
+- **Natural Scala OOP**: Component instance = props, `render` method has direct field access
+- **Standard Scala 3**: Uses `derives` mechanism and standard companion object patterns
+- **Unified syntax**: Components and HTML elements use identical modifier syntax
+- **Zero boilerplate**: Just define a case class with a render method
+- **Full hooks compatibility**: Compiles to memoized functional components
+- **Special types work naturally**: `Children` and `ClassName` are just fields
+
+**Implementation**:
+
+The `ComponentCompanion[T]` trait uses Scala 3 derivation to:
+1. Extract case class fields and generate prop modifiers (`Button.label`, `Button.disabled`, etc.)
+2. Generate `apply(modifiers: Modifier*)` method that builds component from modifiers
+3. Handle special types (`Children`, `ClassName`) with automatic accumulation
+4. Convert to Preact functional component: `memo((props: Button) => props.render)`
+
+**Compilation to Preact**:
+
+```scala
+// Scala definition
+case class Button(label: String, disabled: Boolean = false):
+  def render: VNode = button(label)
+
+// Compiles to JavaScript (conceptual)
+const Button = memo((props) => {
+  return h("button", {}, props.label);
+});
+```
+
+**External JS Components**:
+
+```scala
+// For existing Preact components from JS libraries
+@js.native
+@JSImport("some-library", "ExternalButton")
+object ExternalButtonJS extends js.Object
+
+case class ExternalButton(
+  label: String,
+  onClick: js.Function0[Unit]
+) derives ExternalComponent
+
+object ExternalButton extends ExternalComponentCompanion[ExternalButton](ExternalButtonJS)
+
+// Usage - same syntax!
+ExternalButton(
+  ExternalButton.label := "Click",
+  ExternalButton.onClick := (() => println("clicked"))
+)
+```
+
+**Implementation complexity**: MEDIUM-HIGH
+- Requires Scala 3 derivation mechanism for typeclass
+- Companion object pattern to generate modifiers
+- Builder logic to construct case class from modifiers
+- Integration with Preact's `h()` and `memo()`
+
+**Key technical challenges**:
+
+1. Generating companion object members (prop modifiers) via derivation
+2. Building case class instance from accumulated modifiers with defaults
+3. Converting case class instance to JS object for Preact
+4. Handling special types (Children, ClassName) with automatic accumulation
+
+---
+
+### Alternative Approach: Functional Components + memo() Wrapper
 
 **Concept**: Wrap Scala component functions with Preact's `memo()` at runtime through a helper function.
 
@@ -120,6 +237,40 @@ Preact Signals provides **fine-grained reactivity** that bypasses Virtual DOM di
 - memo() functional components: ~90-95% of class component performance
 - With Signals: Often faster than class components due to fine-grained updates
 - Unmemoized functional: ~10-20% (re-renders everything unnecessarily)
+
+---
+
+## Approach Comparison
+
+### When to Use Each Approach
+
+**Unified Component-as-Case-Class (Preferred)**:
+- ✅ Most components - this is the recommended default
+- ✅ Components with multiple props
+- ✅ Components that accept children or className
+- ✅ When you want unified syntax with HTML elements
+- ✅ External JS components that need Scala facades
+
+**Functional Components + memo() (Alternative)**:
+- ✅ Very simple components without props
+- ✅ Quick prototyping or examples
+- ✅ When you prefer separating props from render logic
+- ✅ Compatibility with existing functional component patterns
+
+**Comparison Table**:
+
+| Aspect | Component-as-Case-Class | Functional + memo() |
+|--------|------------------------|---------------------|
+| Definition | Single case class with render | Separate props + function |
+| Props access | `field` or `this.field` | `props.field` |
+| Syntax | Unified with HTML DSL | Traditional function call |
+| Boilerplate | Minimal (case class + render) | Low (function only) |
+| Children/ClassName | Natural fields | Manual handling |
+| External components | Same pattern | Requires wrapper |
+| Mental model | OOP (component is object) | FP (function of props) |
+| Implementation | MEDIUM-HIGH complexity | LOW complexity |
+
+**Recommendation**: Start with Component-as-Case-Class for most use cases. Both compile to the same Preact functional components, but the unified approach provides better ergonomics and consistency.
 
 ---
 
@@ -568,29 +719,39 @@ The component and props system will be implemented in phases:
 
 This document defines the component implementation approach for Scala 3 Preact bindings:
 
-**Core Design**:
-- Functional components wrapped with `memo()` for automatic memoization
-- Hooks-compatible to support `useSignal()` and `useSignalEffect()`
-- Immutable case class props for efficient equality checks
-- **Derived modifier pattern** for unified syntax with HTML DSL
-
-**Props Innovation**:
-- ✅ **Zero boilerplate**: Define props as case classes (same as before)
+**Preferred Design - Unified Component-as-Case-Class**:
+- ✅ **Single definition**: Component and props unified - case class fields ARE the props
+- ✅ **Natural Scala**: Component instance = props, `render` method for output
+- ✅ **Zero boilerplate**: Just define `case class MyComponent(...): def render = ...`
 - ✅ **Unified syntax**: Components and HTML elements use identical modifier syntax
+- ✅ **Standard Scala 3**: Uses `derives` mechanism and companion object patterns
+- ✅ **Hooks-compatible**: Compiles to memoized functional components for `useSignal()`, `useSignalEffect()`
+
+**Core Design Principles**:
+- Component case class fields define the props (immutable by default)
+- `render` method returns VNode using HTML DSL
+- Companion object extends `ComponentCompanion[T]` for modifier generation
+- Special types (`Children`, `ClassName`) work naturally as fields
+- Compiles to Preact's `h()` calls with `memo()` wrapping
+
+**Props Innovation with Derived Modifier Pattern**:
+- ✅ **Automatic derivation**: Companion generates prop modifiers from case class fields
 - ✅ **Special types**: `Children` and `ClassName` accumulate automatically
 - ✅ **Type safety**: Compile-time validation of required props
 - ✅ **Default values**: Case class defaults work naturally
+- ✅ **External components**: Same pattern works for imported JS components
 
 **Key Benefits**:
-- ✅ Excellent performance (~90-95% of class components, often better with signals)
+- ✅ Excellent performance (compiles to memoized functional components)
 - ✅ Full compatibility with Preact Signals hooks
 - ✅ Unified markup language (components = HTML elements)
-- ✅ Idiomatic Scala 3 syntax with braceless `component:` helpers
+- ✅ Idiomatic Scala 3 OOP style (component is a case class with render method)
 - ✅ Automatic child and className accumulation
-- ✅ Future-proof: Can transparently upgrade to inline macros if needed
+- ✅ Works with both internal and external (JS) components
 
 **Implementation Status**:
-- Component API fully designed with phased implementation plan
+- Component-as-case-class pattern designed as preferred approach
+- Alternative functional component pattern available for simpler cases
 - Props modifier pattern designed with automatic derivation
 - Signals integration detailed in [signals-design.md](./signals-design.md)
 - Class components excluded due to hooks incompatibility
