@@ -1,22 +1,162 @@
-# HTML DSL Design - Laminar-Inspired Unified Modifier API
+# HTML DSL Design - Unified Case Class Approach
 
 ## Overview
-This document details the design of the HTML DSL for Scala Preact bindings, inspired by Laminar's unified modifier approach where attributes, children, and other modifiers are passed in a single parameter list.
+This document details the design of the HTML DSL for Scala Preact bindings, using a **unified case class approach** where HTML elements are defined the same way as custom components - as case classes with a render method. This creates perfect consistency between built-in and custom elements.
 
 See also:
 - [Library General](./library-general.md) - Core architecture and types
-- [Component Implementation](./component-implementation.md) - Component definition approaches
+- [Component Implementation](./component-implementation.md) - Component definition approaches (component-as-case-class)
 
 ---
 
 ## Design Goals
 
-1. **Unified Modifier API**: Following Laminar's approach, tags accept a single varargs parameter of `Modifier` type
-2. **Props and Children Together**: Mix attributes, children, event handlers, styles, etc. in one list
-3. **Type-Safe**: Compile-time checking where possible
-4. **Zero/Minimal Overhead**: Builder pattern with efficient accumulation
-5. **Extensible**: Easy to add custom modifier types
-6. **Idiomatic Scala 3**: Braceless syntax, extension methods, inline functions
+1. **Unified Component Model**: HTML elements and custom components use the same case class pattern
+2. **Inheritance for Common Attributes**: Traits like `GlobalAttrs`, `FormAttrs` for shared DOM properties
+3. **Modifier API**: Both elements and components accept `Modifier*` parameter
+4. **Type-Safe**: Compile-time checking via case class fields
+5. **Zero Boilerplate**: Derivation generates everything from case class definitions
+6. **Idiomatic Scala 3**: Braceless syntax, derives mechanism, inline functions
+
+---
+
+## Core Insight: HTML Elements ARE Components
+
+Just like custom components are case classes with a `render` method, HTML elements can be defined the same way:
+
+```scala
+// Custom component
+case class Button(label: String, disabled: Boolean = false):
+  def render: VNode = /* ... */
+
+// HTML element - same pattern!
+case class div(
+  id: Option[String] = None,
+  className: ClassName = ClassName.empty,
+  children: Children = Children.empty
+) extends GlobalAttrs:
+  def render: VNode = h("div", props, children)
+
+// Usage is identical
+div(
+  div.id := "main",
+  div.className := "container",
+  span("Hello")
+)
+
+Button(
+  Button.label := "Click",
+  span("Icon")
+)
+```
+
+This creates a **truly unified markup language**.
+
+---
+
+## Attribute Inheritance Hierarchy
+
+HTML elements share many common attributes. We use trait inheritance to model this:
+
+```scala
+// Base trait for all elements with children
+trait HasChildren:
+  def children: Children
+
+// Global attributes (apply to all HTML elements)
+trait GlobalAttrs extends HasChildren:
+  def id: Option[String]
+  def className: ClassName
+  def title: Option[String]
+  def lang: Option[String]
+  def role: Option[String]
+  // More global attrs...
+
+// Form-related attributes
+trait FormAttrs extends GlobalAttrs:
+  def name: Option[String]
+  def disabled: Boolean
+  def required: Boolean
+  def readOnly: Boolean
+
+// Interactive element attributes
+trait InteractiveAttrs extends GlobalAttrs:
+  def onClick: Option[js.Function1[js.Any, Unit]]
+  def onFocus: Option[js.Function1[js.Any, Unit]]
+  def onBlur: Option[js.Function1[js.Any, Unit]]
+
+// Link attributes
+trait LinkAttrs extends GlobalAttrs:
+  def href: Option[String]
+  def target: Option[String]
+
+// Media attributes
+trait MediaAttrs extends GlobalAttrs:
+  def src: Option[String]
+  def alt: Option[String]
+  def width: Option[String | Int]
+  def height: Option[String | Int]
+```
+
+**Example Usage**:
+
+```scala
+// div only needs global attributes
+case class div(
+  id: Option[String] = None,
+  className: ClassName = ClassName.empty,
+  title: Option[String] = None,
+  children: Children = Children.empty
+) extends GlobalAttrs
+
+// button has interactive and form attributes
+case class button(
+  id: Option[String] = None,
+  className: ClassName = ClassName.empty,
+  disabled: Boolean = false,
+  onClick: Option[js.Function1[js.Any, Unit]] = None,
+  children: Children = Children.empty
+) extends FormAttrs with InteractiveAttrs
+
+// a (link) has link attributes
+case class a(
+  id: Option[String] = None,
+  className: ClassName = ClassName.empty,
+  href: Option[String] = None,
+  target: Option[String] = None,
+  children: Children = Children.empty
+) extends LinkAttrs
+```
+
+---
+
+## Simplified Approach for Minimal Implementation
+
+For the **proof of concept**, we'll skip the trait hierarchy and define elements directly:
+
+```scala
+// Minimal element definitions without inheritance
+case class div(children: Children = Children.empty)
+case class span(children: Children = Children.empty)
+case class button(
+  disabled: Boolean = false,
+  children: Children = Children.empty
+)
+```
+
+**Companion objects** extend `ElementCompanion[T]`:
+
+```scala
+object div extends ElementCompanion[div]
+object span extends ElementCompanion[span]
+object button extends ElementCompanion[button]
+```
+
+The `ElementCompanion` trait:
+1. Generates prop modifiers for each field
+2. Provides `apply(modifiers: Modifier*)` method
+3. Handles special types (Children, ClassName)
+4. Calls `h(tagName, props, children*)` for rendering
 
 ---
 
