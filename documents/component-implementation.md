@@ -1,9 +1,11 @@
 # Component Implementation - Design Approaches
 
 ## Overview
+
 This document explores different approaches for implementing Scala 3 Preact component bindings, with their performance characteristics and implementation tradeoffs.
 
 See also:
+
 - [Library General](./library-general.md) - Core architecture and facades
 - [HTML DSL Design](./html-dsl-design.md) - Laminar-inspired modifier API
 
@@ -11,94 +13,45 @@ See also:
 
 ## Design Constraints
 
-All component approaches must:
 1. Support case class props (immutable by default)
 2. Leverage immutability for automatic performance optimization
 3. Compile to idiomatic JavaScript that Preact understands
-4. Be function-based (user writes functions, not classes)
+4. Be function-based and hooks-compatible (uses useSignal, useSignalEffect)
 5. Use braceless Scala 3 syntax
 6. Have zero or minimal runtime overhead
 
 ---
 
-## Alternative Approaches
+## Component Implementation Approach
 
-### Approach 1: @component Macro + Preact Component Classes
-
-**BEST PERFORMANCE - HIGHEST COMPLEXITY**
-
-**Concept**: Use a Scala 3 macro annotation `@component` that transforms a Scala function into a Preact component class with automatic `shouldComponentUpdate` implementation.
-
-**How it works**:
-```scala
-@component
-def MyButton(props: ButtonProps): VNode =
-  button(onClick := props.onClick, props.label)
-```
-
-The macro generates JavaScript code equivalent to:
-```javascript
-class MyButton extends preact.Component {
-  shouldComponentUpdate(nextProps) {
-    // Shallow comparison of all props
-    return !shallowEqual(this.props, nextProps)
-  }
-
-  render() {
-    return h('button', {onClick: this.props.onClick}, this.props.label)
-  }
-}
-```
-
-**Advantages**:
-- **Best performance**: Preact component classes with `shouldComponentUpdate` are faster than `memo()` functional components
-- **No wrapper overhead**: Direct class generation, no runtime wrapping
-- **Fine-grained control**: Can customize comparison logic per component if needed
-- **True zero-cost abstraction**: Macro expands at compile time
-
-**Disadvantages**:
-- **Complex macro implementation**: Requires sophisticated compile-time code generation
-- **Harder to debug**: Macro-generated code can be opaque
-- **Scala 3 macro expertise required**: Non-trivial to implement correctly
-- **Potential compilation overhead**: Macros can slow down compile times
-
-**Implementation complexity**: HIGH
-
-**Key technical challenges**:
-1. Generating JavaScript class syntax from Scala.js
-2. Implementing shallow equality comparison for case class props
-3. Handling children props correctly
-4. Ensuring proper `this` binding in methods
-5. Type-safe macro that preserves type information
-
----
-
-### Approach 2: Functional Components + memo() Wrapper
-
-**GOOD PERFORMANCE - LOW COMPLEXITY (RECOMMENDED FOR INITIAL IMPLEMENTATION)**
+### Primary Approach: Functional Components + memo() Wrapper
 
 **Concept**: Wrap Scala component functions with Preact's `memo()` at runtime through a helper function.
 
 **How it works**:
+
 ```scala
 val MyButton = component[ButtonProps]: props =>
   button(onClick := props.onClick, props.label)
 ```
 
 The `component` helper wraps the function:
+
 ```javascript
 export const MyButton = memo((props) => {
-  return h('button', {onClick: props.onClick}, props.label)
-})
+  return h("button", { onClick: props.onClick }, props.label);
+});
 ```
 
 **Advantages**:
+
 - **Simple implementation**: No macros needed, just inline helper functions
 - **Easy to understand**: Transparent runtime behavior
 - **Flexible**: Easy to add custom comparison functions
 - **Standard Preact pattern**: Uses official Preact memoization API
 
 **Disadvantages**:
+
 - **Slightly slower than classes**: `memo()` adds a small wrapper overhead (~5-10%)
 - **Runtime wrapping**: Component wrapping happens at runtime
 - **Less performant**: Benchmarks show class components are faster
@@ -106,6 +59,7 @@ export const MyButton = memo((props) => {
 **Implementation complexity**: LOW
 
 **Key technical challenges**:
+
 1. Proper JavaScript function wrapping
 2. Ensuring memo() is imported from preact/compat
 3. Handling optional custom comparison functions
@@ -142,105 +96,257 @@ object ComponentHelpers:
     memo(jsFunc, jsCompare)
 ```
 
----
-
-### Approach 3: Manual Component Classes (No Macro)
-
-**Concept**: Provide a base `Component` trait that users extend manually, implementing Scala traits that compile to JavaScript classes.
-
-**How it works**:
-```scala
-class MyButton extends Component[ButtonProps]:
-  def render(): VNode =
-    button(onClick := props.onClick, props.label)
-```
-
-**Advantages**:
-- **No macro magic**: Explicit class definition
-- **Full control**: Users can override any lifecycle method
-- **Performance**: Direct class components
-
-**Disadvantages**:
-- **Verbose**: Users write more boilerplate
-- **Not function-based**: Deviates from desired functional API
-- **Manual shouldComponentUpdate**: Users must implement optimization themselves
-
-**Implementation complexity**: MEDIUM
-
-**Not recommended**: Doesn't meet the requirement for function-based API.
-
----
-
-### Approach 4: Hybrid - Simple Wrapper + Optional @component
-
-**Concept**: Start with simple `component()` wrapper (Approach 2) but provide optional `@component` macro for performance-critical components.
-
-**How it works**:
-```scala
-// Simple wrapper for most components
-val SimpleButton = component[ButtonProps]: props =>
-  button(props.label)
-
-// Macro annotation for performance-critical components
-@component
-def ComplexList(props: ListProps): VNode =
-  div(props.items.map(item => renderItem(item))*)
-```
-
-**Advantages**:
-- **Progressive optimization**: Start simple, optimize later
-- **Flexibility**: Choose per-component
-- **Easier migration**: Can switch approaches without rewriting everything
-
-**Disadvantages**:
-- **Two APIs to maintain**: More surface area
-- **Confusion**: Users must understand when to use which approach
-
-**Implementation complexity**: HIGH (both approaches)
-
-**Potentially valuable**: Provides escape hatch for performance-critical code while keeping simple cases simple.
-
----
-
 ## Performance Considerations
 
-### Preact Component Classes vs memo()
+### memo() Performance Characteristics
 
-**Why classes are faster**:
-1. **Direct lifecycle method**: `shouldComponentUpdate` is called directly by Preact's reconciler
-2. **No wrapper function**: Classes don't need the memo wrapper closure
-3. **Simpler call stack**: Fewer function calls during rendering
-4. **Better JIT optimization**: JavaScript engines optimize classes well
+The `memo()` wrapper provides excellent performance for functional components:
+
+**Benefits**:
+
+- **Shallow prop comparison**: Automatically prevents re-renders when props haven't changed
+- **Immutable case classes**: Scala's case classes provide efficient equality checks
+- **Hooks compatibility**: Works seamlessly with Preact Signals hooks (`useSignal`, `useSignalEffect`)
+
+**Further optimization with Signals**:
+Preact Signals provides **fine-grained reactivity** that bypasses Virtual DOM diffing entirely:
+
+- When a component reads a signal value, only that specific component re-renders when the signal changes
+- Signal updates can directly mutate the DOM, skipping the reconciliation phase
+- This makes signals + memo() a highly performant combination
 
 **Benchmark expectations**:
-- Class components: ~100% baseline
-- memo() functional: ~90-95% (small overhead from wrapper)
-- Unmemoized functional: ~10-20% (re-renders everything)
 
-**For this project**: Since we're leveraging immutability, the shallow comparison in `shouldComponentUpdate` will be extremely effective, making any memoization approach highly beneficial.
+- memo() functional components: ~90-95% of class component performance
+- With Signals: Often faster than class components due to fine-grained updates
+- Unmemoized functional: ~10-20% (re-renders everything unnecessarily)
 
 ---
 
-## Recommended Implementation Strategy
+## Why Not Class Components?
 
-Given the goal of exploring alternatives with minimal initial complexity:
+While Preact supports class components, this library focuses exclusively on functional components for several key reasons:
 
-### Phase 1: Implement Approach 2 (memo wrapper) FIRST
+1. **Hooks Requirement**: Preact Signals provides hooks like `useSignal()` and `useSignalEffect()` that only work with functional components. Since signals are the primary state management solution, functional components are required.
 
-**Why?**
-1. **Fastest to test**: Can validate the core bindings design quickly
-2. **Still performant**: ~90-95% performance is good enough for initial testing
-3. **Foundation for macros**: The core type system will be reused in macro approach
-4. **Easy comparison**: Can later implement Approach 1 and benchmark differences
+2. **Automatic Signal Tracking**: Functional components integrate seamlessly with Preact's automatic signal dependency tracking. Class components would require manual subscription management.
 
-### Phase 2: Evaluate and Decide
+3. **Simpler Implementation**: Functional components with `memo()` are straightforward to implement and maintain, avoiding the complexity of macro-generated classes or manual lifecycle methods.
 
-Once the basic bindings work:
-1. Benchmark the memo() approach in real-world scenarios
-2. Determine if performance is acceptable for target use cases
-3. If needed, implement the @component macro approach
-4. Compare performance in real-world scenarios
-5. Decide which to use as the primary API (or keep both for Approach 4)
+4. **Modern Preact Patterns**: The Preact ecosystem has moved toward functional components and hooks as the recommended approach.
+
+The combination of functional components + `memo()` + signals provides excellent performance with a simple, maintainable API.
+
+---
+
+## Implementation Strategy
+
+The implementation follows a straightforward path:
+
+1. **Implement functional components with memo() wrapper** - This provides the core component functionality with good performance and full hooks compatibility
+
+2. **Leverage Preact Signals for state management** - Use `useSignal()` for local state and global signals for shared state, enabling fine-grained reactivity
+
+3. **Optimize with immutable case classes** - Scala's case classes provide efficient shallow equality checks, making `memo()` highly effective
+
+4. **(Optional) Consider inline macro optimization** - If performance profiling reveals bottlenecks, the `component:` syntax could be transparently upgraded to an inline macro (see "Future: Inline Macro Optimization" below)
+
+---
+
+## Props Design: Derived Modifier Pattern
+
+### Overview
+
+Component props use a **derived modifier pattern** that provides:
+- ✅ **Zero boilerplate** - Define props as case classes (same as before)
+- ✅ **Unified syntax** - Components and HTML elements use identical modifier syntax
+- ✅ **Automatic derivation** - Macro generates modifier schema from case class
+- ✅ **Type safety** - Compile-time validation of required props
+- ✅ **Special types** - `Children` and `ClassName` accumulate automatically
+- ✅ **Default values** - Case class defaults work naturally
+
+### The Key Insight
+
+Props are defined as case classes, but **usage** is identical to HTML DSL modifiers:
+
+```scala
+// HTML element
+div(
+  cls := "container",
+  span("Hello")
+)
+
+// Custom component - SAME SYNTAX!
+Button(
+  ButtonProps.label := "Click",
+  span("Icon")
+)
+```
+
+This creates a **unified markup language** where built-in and custom components are indistinguishable.
+
+### Special Types: Children
+
+**The `Children` type** accumulates child modifiers automatically:
+
+```scala
+// Opaque type for children
+opaque type Children = Seq[Child]
+
+object Children:
+  def empty: Children = Seq.empty
+  def apply(children: Child*): Children = children.toSeq
+```
+
+**Usage:**
+
+```scala
+case class ButtonProps(
+  label: String,
+  children: Children = Children.empty
+) extends Props
+
+val Button = component[ButtonProps]: props =>
+  button(
+    props.label,
+    props.children  // Renders accumulated children
+  )
+
+// Children accumulate automatically
+Button(
+  ButtonProps.label := "Click me",
+  span("Icon "),       // Child 1
+  "Button text"        // Child 2
+)
+```
+
+### Special Types: ClassName
+
+**The `ClassName` type** accumulates `cls` modifiers automatically:
+
+```scala
+// Opaque type for class names
+opaque type ClassName = String
+
+object ClassName:
+  def empty: ClassName = ""
+  def apply(classes: String*): ClassName =
+    classes.filter(_.nonEmpty).mkString(" ")
+```
+
+**Usage:**
+
+```scala
+case class ButtonProps(
+  label: String,
+  className: ClassName = ClassName.empty
+) extends Props
+
+val Button = component[ButtonProps]: props =>
+  button(
+    className := props.className,  // Converts to string
+    props.label
+  )
+
+// cls modifiers accumulate into className
+Button(
+  ButtonProps.label := "Click",
+  cls := "btn",
+  cls := "btn-primary",
+  cls := "btn-large"
+)
+// Component receives: className = "btn btn-primary btn-large"
+```
+
+**Conditional classes:**
+
+```scala
+extension (s: String)
+  def when(condition: Boolean): String =
+    if condition then s else ""
+
+Button(
+  ButtonProps.label := "Click",
+  cls := "btn",
+  cls := "active".when(isActive),
+  cls := "disabled".when(isDisabled)
+)
+```
+
+### Complete Example: Card Component
+
+```scala
+case class CardProps(
+  title: String,
+  variant: String = "default",
+  className: ClassName = ClassName.empty,
+  children: Children = Children.empty
+) extends Props
+
+val Card = component[CardProps]: props =>
+  div(
+    cls := "card",
+    cls := s"card-${props.variant}",
+    cls := props.className,
+    div(cls := "card-title", props.title),
+    div(cls := "card-content", props.children)
+  )
+
+// Usage - natural and consistent!
+Card(
+  CardProps.title := "Welcome",
+  CardProps.variant := "primary",
+  cls := "shadow-lg",
+  cls := "rounded-xl",
+  p("This is the card content"),
+  button("Click me")
+)
+
+// Renders to:
+// <div class="card card-primary shadow-lg rounded-xl">
+//   <div class="card-title">Welcome</div>
+//   <div class="card-content">
+//     <p>This is the card content</p>
+//     <button>Click me</button>
+//   </div>
+// </div>
+```
+
+### How It Works
+
+A Scala 3 macro derives the modifier schema from your case class:
+
+```scala
+// You write:
+case class ButtonProps(
+  label: String,
+  disabled: Boolean = false
+) extends Props
+
+val Button = component[ButtonProps]: props => button(props.label)
+
+// Macro generates (conceptual):
+object ButtonProps:
+  val label = RequiredProp[String]("label")
+  val disabled = OptionalProp[Boolean]("disabled", default = false)
+
+object Button:
+  def apply(modifiers: Modifier*): VNode =
+    // Accumulate modifiers, validate required props, construct case class
+    // Then call render function
+```
+
+### Benefits
+
+| Feature | Traditional Props | Modifier Pattern |
+|---------|------------------|------------------|
+| Syntax consistency | ❌ Different from HTML | ✅ Identical to HTML DSL |
+| Children handling | ⚠️ Manual field | ✅ Automatic accumulation |
+| ClassName handling | ⚠️ Manual concatenation | ✅ Automatic with `cls` |
+| Default values | ✅ Case class defaults | ✅ Case class defaults |
+| Type safety | ✅ Good | ✅ Excellent (required validation) |
+| Definition | ✅ Simple case class | ✅ Same case class |
+| Performance | ✅ Excellent | ✅ Good (small overhead) |
 
 ---
 
@@ -262,7 +368,21 @@ val Button = component[ButtonProps]: props =>
     props.label
   )
 
-// Usage
+// Usage - Modifier syntax (recommended)
+Button(
+  ButtonProps.label := "Click me",
+  ButtonProps.onClick := (() => println("Clicked!")),
+  ButtonProps.disabled := true
+)
+
+// Or with imports
+import ButtonProps.*
+Button(
+  label := "Click me",
+  onClick := (() => println("Clicked!"))
+)
+
+// Traditional syntax (also works)
 Button(ButtonProps(
   label = "Click me",
   onClick = () => println("Clicked!")
@@ -305,118 +425,172 @@ val ExpensiveList = componentWithCompare[ExpensiveListProps](
 ```scala
 case class CardProps(
   title: String,
-  content: String
+  content: String,
+  className: ClassName = ClassName.empty,
+  children: Children = Children.empty
 ) extends Props
 
 val Card = component[CardProps]: props =>
   div(
-    className := "card",
+    cls := "card",
+    cls := props.className,
     h3(props.title),
-    p(props.content)
+    p(props.content),
+    props.children
   )
 
 val Dashboard = component: () =>
   div(
-    className := "dashboard",
-    Card(CardProps("Welcome", "Hello user!")),
-    Card(CardProps("Stats", "42 items"))
+    cls := "dashboard",
+    Card(
+      CardProps.title := "Welcome",
+      CardProps.content := "Hello user!",
+      cls := "featured"
+    ),
+    Card(
+      CardProps.title := "Stats",
+      CardProps.content := "42 items"
+    )
   )
 ```
 
 ---
 
-## Future: Macro Implementation (Approach 1)
+## Future: Inline Macro Optimization
 
-If we decide to implement the @component macro approach, here are the key considerations:
+The `component:` syntax could potentially be upgraded to use a Scala 3 inline macro if performance profiling reveals that the runtime `memo()` wrapper introduces unacceptable overhead.
 
-### Macro Structure
+### Key Insight: Syntax Unification
 
-**File: src/scala/preact/bindings/ComponentMacro.scala**
+The current `component:` helper is already an inline function:
 
 ```scala
-package preact.bindings
-
-import scala.annotation.{Annotation, StaticAnnotation}
-import scala.quoted.*
-
-class component extends StaticAnnotation:
-  // Macro implementation outline:
-  // 1. Extract function definition (name, parameters, return type, body)
-  // 2. Validate: must take Props or Unit, must return VNode
-  // 3. Generate JavaScript class extending Preact.Component
-  // 4. Generate shouldComponentUpdate with shallow comparison
-  // 5. Transform function body into render() method
-  // 6. Preserve type information for type-safe usage
+inline def component[P <: Props](f: Component[P]): ComponentFunction[P] = ...
 ```
 
-### Technical Challenges
+Scala 3 inline macros are also inline functions, just with compile-time code generation using quotes and splices. This means the user-facing syntax could remain **identical**, with only the internal implementation changing.
 
-1. **Class generation**: Scala.js doesn't directly support emitting JavaScript class syntax
-   - Solution: Use @JSExportTopLevel and @JSExport with careful structuring
-   - Alternative: Generate factory function that creates class at runtime
+**Current (runtime wrapping)**:
 
-2. **Shallow comparison**: Need to compare all fields of case class props
-   - Solution: Use Scala 3 deriving to generate equality check
-   - Must handle nested case classes, collections, etc.
-
-3. **Props extraction**: Component class has `this.props`, function has parameter
-   - Solution: Transform all references to props parameter into `this.props`
-
-4. **Type preservation**: Macro must maintain full type information
-   - Solution: Use TypeRepr and Symbol APIs carefully
-
-5. **Debugging**: Generated code needs good source maps
-   - Solution: Preserve position information in macro expansion
-
-### Example Macro Output
-
-Input:
 ```scala
-@component
-def MyButton(props: ButtonProps): VNode =
+val MyButton = component[ButtonProps]: props =>
   button(onClick := props.onClick, props.label)
 ```
 
-Conceptual output (actual implementation would be more complex):
+**Future (macro, same syntax)**:
+
 ```scala
-object MyButton extends js.Object:
-  private class Component extends Preact.Component:
-    def shouldComponentUpdate(nextProps: js.Any, nextState: js.Any): Boolean =
-      val current = this.props.asInstanceOf[ButtonProps]
-      val next = nextProps.asInstanceOf[ButtonProps]
-      current != next // Case class equality
-
-    def render(): VNode =
-      val props = this.props.asInstanceOf[ButtonProps]
-      button(onClick := props.onClick, props.label)
-
-  val instance: ComponentFunction[ButtonProps] = Component.asInstanceOf[ComponentFunction[ButtonProps]]
+val MyButton = component[ButtonProps]: props =>
+  button(onClick := props.onClick, props.label)
 ```
 
-### Decision Criteria for Macro Implementation
+### What Would Change
 
-Implement the macro approach if:
-1. Benchmarks show memo() overhead is significant (>10%)
-2. Real-world applications show performance bottlenecks
-3. Team has Scala 3 macro expertise available
-4. Maintenance burden is acceptable
+The inline macro version would generate optimized code at compile time instead of wrapping at runtime:
 
-Don't implement if:
-1. memo() performance is acceptable
-2. Complexity outweighs benefits
-3. Debugging difficulties would hurt productivity
+- **Current**: Wraps the function with `memo()` at runtime
+- **Future**: Could generate a Preact class component or optimized functional component at compile time
+- **User code**: No changes required - the syntax stays the same
+
+### When to Consider This
+
+Only implement the inline macro optimization if:
+
+1. **Performance profiling** shows the `memo()` wrapper overhead is significant (>10% in critical paths)
+2. **Real-world benchmarks** demonstrate that the optimization provides measurable benefits
+3. **Development resources** are available for macro implementation and maintenance
+
+### Benefits of Deferring
+
+- **Simpler implementation**: Focus on getting the core bindings working first
+- **Easier debugging**: Runtime code is more transparent than macro-generated code
+- **Future-proof**: Can always add the optimization later without breaking existing code
+- **Pragmatic**: The memo() approach is already very performant, especially with signals
+
+---
+
+## Implementation Phases
+
+The component and props system will be implemented in phases:
+
+### Phase 1: Core Component System
+1. Implement `component[Props]` helper with `memo()` wrapper
+2. Support basic case class props (traditional syntax)
+3. Type system for `Props`, `Component`, `ComponentFunction`
+4. Basic memoization with shallow prop comparison
+
+**Deliverable**: Functional components work with case class props
+
+### Phase 2: Special Types (Children & ClassName)
+1. Define `Children` opaque type
+2. Define `ClassName` opaque type
+3. Components can accept and use these special types
+4. Manual construction (not yet automatic accumulation)
+
+**Deliverable**: Components can use `Children` and `ClassName` explicitly
+
+### Phase 3: Modifier Pattern Derivation
+1. Implement Scala 3 macro to derive modifier schema from case class
+2. Generate prop modifier objects in companion object
+3. Generate component `apply` method accepting `Modifier*`
+4. Basic props builder (accumulates modifiers, constructs case class)
+
+**Deliverable**: Modifier syntax works for component props
+
+### Phase 4: Automatic Accumulation
+1. Special handling for `ChildModifier` → accumulate into `children` prop
+2. Special handling for `ClsModifier` (`cls := "x"`) → accumulate into `className` prop
+3. Type-level detection of `Children`/`ClassName` fields in props
+4. Automatic construction of special types from accumulated modifiers
+
+**Deliverable**: Children and className accumulate automatically
+
+### Phase 5: Type-Level Validation
+1. Match types to extract required vs optional fields
+2. Compile-time validation that required props are provided
+3. Clear error messages for missing required props
+4. Error when children/className modifiers used without corresponding prop field
+
+**Deliverable**: Compile-time safety for required props
+
+### Phase 6: Polish & Optimization
+1. Optimize builder to reduce allocations
+2. Inline builder logic where possible
+3. Support complex default value expressions
+4. Better error messages with source positions
+5. Documentation and examples
+
+**Deliverable**: Production-ready component system
 
 ---
 
 ## Summary
 
-**Recommended path**:
-1. Start with **Approach 2** (memo wrapper) for simplicity and speed
-2. Build real applications and gather performance data
-3. If needed, implement **Approach 1** (@component macro) for critical paths
-4. Consider **Approach 4** (hybrid) if both are valuable
+This document defines the component implementation approach for Scala 3 Preact bindings:
 
-**Current status**:
-- Approach 2 is fully designed and ready to implement
-- Approach 1 is documented but not yet implemented
-- Decision point after Phase 5 (Performance Evaluation)
+**Core Design**:
+- Functional components wrapped with `memo()` for automatic memoization
+- Hooks-compatible to support `useSignal()` and `useSignalEffect()`
+- Immutable case class props for efficient equality checks
+- **Derived modifier pattern** for unified syntax with HTML DSL
+
+**Props Innovation**:
+- ✅ **Zero boilerplate**: Define props as case classes (same as before)
+- ✅ **Unified syntax**: Components and HTML elements use identical modifier syntax
+- ✅ **Special types**: `Children` and `ClassName` accumulate automatically
+- ✅ **Type safety**: Compile-time validation of required props
+- ✅ **Default values**: Case class defaults work naturally
+
+**Key Benefits**:
+- ✅ Excellent performance (~90-95% of class components, often better with signals)
+- ✅ Full compatibility with Preact Signals hooks
+- ✅ Unified markup language (components = HTML elements)
+- ✅ Idiomatic Scala 3 syntax with braceless `component:` helpers
+- ✅ Automatic child and className accumulation
+- ✅ Future-proof: Can transparently upgrade to inline macros if needed
+
+**Implementation Status**:
+- Component API fully designed with phased implementation plan
+- Props modifier pattern designed with automatic derivation
+- Signals integration detailed in [signals-design.md](./signals-design.md)
+- Class components excluded due to hooks incompatibility

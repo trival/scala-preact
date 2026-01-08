@@ -1,9 +1,11 @@
 # Signals and State Management - Preact Signals Integration
 
 ## Overview
+
 This document details the design for integrating Preact Signals as a first-class citizen in the Scala Preact bindings. Signals provide automatic fine-grained reactivity that eliminates unnecessary re-renders and serves as the primary state management solution.
 
 See also:
+
 - [Library General](./library-general.md) - Core architecture
 - [Component Implementation](./component-implementation.md) - Component approaches
 - [HTML DSL Design](./html-dsl-design.md) - Unified modifier API
@@ -13,6 +15,7 @@ See also:
 ## What are Preact Signals?
 
 Preact Signals is a performant state management library that provides:
+
 - **Fine-grained reactivity**: Components only re-render when signals they actually read change
 - **Automatic tracking**: No need to declare dependencies, the system tracks them automatically
 - **Optimal performance**: Bypasses Virtual DOM diffing when possible, updates DOM directly
@@ -640,50 +643,26 @@ val doubled: ReadSignal[Int] = intSignal.map(_ * 2)
 
 ---
 
-## Performance Characteristics
-
-### Why Signals are Fast
-
-1. **Fine-grained reactivity**: Only components that read a signal re-render
-2. **Automatic dependency tracking**: No manual dependency arrays
-3. **Batched updates**: Multiple signal changes batch into one render
-4. **Direct DOM updates**: For simple text updates, bypasses VDOM entirely
-5. **Efficient diffing**: When VDOM is used, only changed parts diff
-
-### Benchmarks (Expected)
-
-Compared to traditional state management:
-- **Small updates**: 2-10x faster (direct DOM updates)
-- **Large lists**: 3-5x faster (fine-grained updates)
-- **Derived state**: 2-3x faster (automatic memoization)
-- **Memory**: Slightly higher (tracking overhead)
-
-### Best Practices
-
-1. **Group related state**: Use case classes for related signals
-2. **Use computed for derived values**: Don't manually sync state
-3. **Batch related updates**: Use `Signal.batch` for multiple changes
-4. **Local vs Global**: Use hooks for local state, context for global
-5. **Avoid over-granularity**: Don't create signals for every tiny piece of data
-
----
-
 ## Implementation Files
 
 ### File Structure
 
 1. **src/scala/preact/bindings/signals/Facades.scala**
+
    - JavaScript facades for @preact/signals
 
 2. **src/scala/preact/bindings/Signal.scala**
+
    - Scala wrappers: ReadSignal, WriteSignal, Var, Computed
    - Signal object with creation methods
 
 3. **src/scala/preact/bindings/SignalModifiers.scala**
+
    - Integration with HTML DSL
    - Conversions for signals in modifiers
 
 4. **src/scala/preact/bindings/Context.scala**
+
    - Context API facades
    - SignalContext wrapper
 
@@ -710,18 +689,21 @@ Add to project.scala:
 ## Future Enhancements
 
 ### Short-term
+
 - [ ] Signal-aware list rendering (keyed updates)
 - [ ] Signal debugging utilities
 - [ ] DevTools integration for signal tracking
 - [ ] More hooks: useComputed, useSignalEffect
 
 ### Medium-term
+
 - [ ] Persistent signals (localStorage sync)
 - [ ] Signal middleware (logging, time-travel)
 - [ ] Undo/redo with signals
 - [ ] Signal-based routing
 
 ### Advanced
+
 - [ ] Remote signals (sync with backend)
 - [ ] Conflict-free replicated data types (CRDTs) with signals
 - [ ] Signal-based animation system
@@ -729,37 +711,10 @@ Add to project.scala:
 
 ---
 
-## Comparison with Other Approaches
-
-### Signals vs useState (React/Preact hooks)
-
-| Aspect | Signals | useState |
-|--------|---------|----------|
-| Granularity | Fine-grained | Component-level |
-| Dependency tracking | Automatic | Manual (useEffect deps) |
-| Performance | Excellent | Good |
-| Learning curve | Low | Medium |
-| Global state | Natural | Needs Context + hooks |
-| Outside components | Yes | No (hooks rules) |
-
-### Signals vs External State (Redux, Zustand)
-
-| Aspect | Signals | Redux/Zustand |
-|--------|---------|---------------|
-| Boilerplate | Minimal | Medium-High |
-| Reactivity | Built-in | Via subscriptions |
-| Derived state | Automatic | Manual selectors |
-| Performance | Excellent | Good |
-| DevTools | Basic | Excellent |
-| Middleware | Limited | Extensive |
-
-**Recommendation**: Use Signals as the primary state management solution. The performance benefits and API simplicity make it ideal for most use cases.
-
----
-
 ## Summary
 
 This design provides:
+
 - ✅ Type-safe Scala API for Preact Signals
 - ✅ Idiomatic Scala syntax (apply/update)
 - ✅ Seamless HTML DSL integration
