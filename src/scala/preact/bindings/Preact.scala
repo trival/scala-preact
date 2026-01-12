@@ -1,8 +1,9 @@
 package preact.bindings
 
+import org.scalajs.dom
+
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport
-import org.scalajs.dom
 
 // VNode type (Preact virtual node)
 type VNode = js.Any
@@ -17,7 +18,7 @@ object h extends js.Object:
   def apply(
       tag: String | js.Any,
       props: js.UndefOr[js.Object],
-      children: Child*
+      children: js.UndefOr[js.Array[Child]]
   ): VNode = js.native
 
 // Preact memo() function facade

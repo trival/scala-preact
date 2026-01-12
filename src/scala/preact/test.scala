@@ -1,43 +1,134 @@
 package preact.test
 
-import preact.bindings.Child
+import org.scalajs.dom
+import preact.bindings.*
 
 import scala.scalajs.js
+import scala.scalajs.js.annotation.JSExportTopLevel
 
-case class AttributeModifier[Key <: String, Value](
-    key: Key,
-    value: Value
-):
-  def apply(jsAttribs: js.Dynamic): Unit =
-    jsAttribs
-      .updateDynamic(key)(value.asInstanceOf[js.Any])
+class AttributeModifier[Key <: String, Value](val key: Key, val value: Value):
+  inline def apply(jsAttribs: js.Dynamic): Unit =
+    jsAttribs.updateDynamic(key)(value.asInstanceOf[js.Any])
 
 extension [Key <: String, Value](key: Key)
-  def :=(value: Value): AttributeModifier[Key, Value] =
-    AttributeModifier(key, value)
+  inline def :=(value: Value) = AttributeModifier(key, value)
 
-case class ChildModifier(child: Child):
-  def apply(childrenArray: js.Array[Child]): Unit =
+class ChildModifier(val child: Child):
+  inline def apply(childrenArray: js.Array[Child]): Unit =
     childrenArray.push(child.asInstanceOf[js.Any])
 
-case class div(id: Option[String] = None, cls: Option[String] = None)
+// Given conversions for children
+given Conversion[String, ChildModifier]:
+  inline def apply(str: String) = ChildModifier(str)
+given Conversion[Int, ChildModifier]:
+  inline def apply(num: Int) = ChildModifier(num)
+given Conversion[Double, ChildModifier]:
+  inline def apply(num: Double) = ChildModifier(num)
+given Conversion[VNode, ChildModifier]:
+  inline def apply(vnode: VNode) = ChildModifier(vnode)
 
-object div:
+def buildinTagWithChildren[
+    Modifier <: AttributeModifier[?, ?] | ChildModifier
+](
+    tag: String,
+    modifiers: Seq[Modifier]
+): VNode =
+  var jsAttribs = js.Dynamic.literal()
+  var childrenArray = js.Array[Child]()
+
+  modifiers.foreach {
+    case am: AttributeModifier[?, ?] =>
+      am(jsAttribs)
+    case cm: ChildModifier =>
+      cm(childrenArray)
+  }
+
+  h(tag, jsAttribs, childrenArray)
+
+object DomElement:
   type Id = AttributeModifier["id", String]
   type Cls = AttributeModifier["class", String]
-  type Modifier = Id | Cls | ChildModifier
+  type Disabled = AttributeModifier["disabled", Boolean]
+  type OnClick =
+    AttributeModifier["onClick", js.Function1[dom.MouseEvent, Unit]]
 
-  def apply(modifiers: Modifier*): div =
-    var idOpt: Option[String] = None
-    var clsOpt: Option[String] = None
+  type Modifier = Id | Cls | Disabled | OnClick | ChildModifier
 
-    modifiers.foreach {
-      case AttributeModifier("id", v: String) =>
-        idOpt = Some(v)
-      case AttributeModifier("class", v: String) =>
-        clsOpt = Some(v)
-      case _ =>
-        () // ignore other attributes for this example
+inline def div(ms: DomElement.Modifier*) = buildinTagWithChildren("div", ms)
+inline def span(ms: DomElement.Modifier*) = buildinTagWithChildren("span", ms)
+inline def h3(ms: DomElement.Modifier*) = buildinTagWithChildren("h3", ms)
+inline def button(ms: DomElement.Modifier*) =
+  buildinTagWithChildren("button", ms)
+
+// === component base types ===
+
+type Children = js.Array[Child]
+
+// ===== Example App =====
+
+case class Card(
+    title: String,
+    children: Children
+):
+  def render(self: Card): VNode =
+    div(
+      h3(title), // Card title
+      div(
+        children
+      ) // Card content - spread children as modifiers
+    )
+
+object Card:
+  type Modifier =
+    AttributeModifier["title", String] | ChildModifier
+
+  def apply(ms: Modifier*): VNode =
+    var titleValue: String = ""
+    val childMods = js.Array[Child]()
+
+    ms.foreach {
+      case title: AttributeModifier["title", String] =>
+        titleValue = title.value
+      case cm: ChildModifier =>
+        childMods += cm.child
     }
 
-    div(idOpt, clsOpt)
+    val card = Card(titleValue, childMods)
+    card.render(card)
+
+def appContent =
+  div(
+    "id" := "greeting", // id attribute
+    "class" := "container", // class attribute
+
+    "This is a div element.", // child element
+
+    span(
+      "class" := "nested",
+      "Nested span child element."
+    ), // nested div as child
+
+    // Button with disabled prop
+    button(
+      "disabled" := true,
+      "Disabled Button"
+    ),
+
+    // Button with click handler
+    button(
+      "onClick" := (e => println("Button clicked!")),
+      "Click me"
+    ),
+
+    // Card component with title and children
+    Card(
+      "title" := "My Card Title",
+      "This is the content of the card.",
+      div("A nested div inside the card.", button("Nested Button"))
+    )
+  )
+
+@JSExportTopLevel("renderApp2")
+def renderApp2(): Unit =
+  val rootElement = dom.document.body
+  render(appContent, rootElement)

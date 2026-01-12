@@ -40,7 +40,7 @@ abstract class SimpleElementCompanion[T](val tagName: String)
   def buildVNode(instance: T): VNode =
     // For POC, just use the builder approach
     // In full implementation, would extract fields from instance
-    h(tagName, js.undefined)
+    h(tagName, js.undefined, js.undefined)
 
 /** Helper for creating prop modifiers In full implementation, these would be
   * generated per element

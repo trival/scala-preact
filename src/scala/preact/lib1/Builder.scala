@@ -7,7 +7,7 @@ import preact.bindings.*
 // Builder that accumulates modifiers into props and children
 class ElementBuilder:
   private val props = js.Dynamic.literal()
-  private val childrenBuffer = mutable.ArrayBuffer[Child]()
+  private val childrenBuffer = js.Array[Child]()
 
   def addModifier(mod: Modifier): Unit = mod match
     case PropModifier(key, value) =>
@@ -26,7 +26,7 @@ class ElementBuilder:
     // Only pass props if there are any
     val jsProps =
       if hasProps then props.asInstanceOf[js.Object] else js.undefined
-    h(tag, jsProps, childrenBuffer.toSeq*)
+    h(tag, jsProps, childrenBuffer)
 
   private def hasProps: Boolean =
     // Check if props object has any own properties
