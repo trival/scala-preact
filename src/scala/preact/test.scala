@@ -157,11 +157,19 @@ def appContent =
       "This is the content of the card.",
       div("A nested div inside the card.", button("Nested Button"))
     ),
+
     // Card component with title and children
-    Card2(
+    Card(
       "title" := "My Second Card with Footer",
       "footer" := "This is the footer text.",
       "This is the content of the second card."
+    ),
+
+    // Card2 component
+    Card2(
+      "title" := "My Card2 with Footer",
+      "footer" := "This is the footer text.",
+      "This is the content of the Card2."
     )
   )
 

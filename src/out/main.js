@@ -1211,7 +1211,7 @@ $p.j = (function(tag, modifiers) {
 $p.aB = (function() {
   return $m_Lpreact_test_test$package$().j("div", $m_sr_ScalaRunTime$().l(new $ac_O([new $c_Lpreact_test_modifier_AttributeModifier("id", "greeting"), new $c_Lpreact_test_modifier_AttributeModifier("class", "container"), new $c_Lpreact_test_modifier_ChildModifier("This is a div element."), new $c_Lpreact_test_modifier_ChildModifier($m_Lpreact_test_test$package$().j("span", $m_sr_ScalaRunTime$().l(new $ac_O([new $c_Lpreact_test_modifier_AttributeModifier("class", "nested"), new $c_Lpreact_test_modifier_ChildModifier("Nested span child element.")])))), new $c_Lpreact_test_modifier_ChildModifier($m_Lpreact_test_test$package$().j("button", $m_sr_ScalaRunTime$().l(new $ac_O([new $c_Lpreact_test_modifier_AttributeModifier("disabled", true), new $c_Lpreact_test_modifier_ChildModifier("Disabled Button")])))), new $c_Lpreact_test_modifier_ChildModifier($m_Lpreact_test_test$package$().j("button", $m_sr_ScalaRunTime$().l(new $ac_O([new $c_Lpreact_test_modifier_AttributeModifier("onClick", ((e$3) => {
     $m_s_Console$().aR().aM("Button clicked!\n");
-  })), new $c_Lpreact_test_modifier_ChildModifier("Click me")])))), new $c_Lpreact_test_modifier_ChildModifier($m_Lpreact_test_Card$().a8(new $c_sjsr_WrappedVarArgs([new $c_Lpreact_test_modifier_AttributeModifier("title", "My Card Title"), new $c_Lpreact_test_modifier_ChildModifier("This is the content of the card."), new $c_Lpreact_test_modifier_ChildModifier($m_Lpreact_test_test$package$().j("div", $m_sr_ScalaRunTime$().l(new $ac_O([new $c_Lpreact_test_modifier_ChildModifier("A nested div inside the card."), new $c_Lpreact_test_modifier_ChildModifier($m_Lpreact_test_test$package$().j("button", $m_sr_ScalaRunTime$().l(new $ac_O([new $c_Lpreact_test_modifier_ChildModifier("Nested Button")]))))]))))]))), new $c_Lpreact_test_modifier_ChildModifier($m_Lpreact_test_Card2$().a8(new $c_sjsr_WrappedVarArgs([new $c_Lpreact_test_modifier_AttributeModifier("title", "My Second Card with Footer"), new $c_Lpreact_test_modifier_AttributeModifier("footer", "This is the footer text."), new $c_Lpreact_test_modifier_ChildModifier("This is the content of the second card.")])))])));
+  })), new $c_Lpreact_test_modifier_ChildModifier("Click me")])))), new $c_Lpreact_test_modifier_ChildModifier($m_Lpreact_test_Card$().W(new $c_sjsr_WrappedVarArgs([new $c_Lpreact_test_modifier_AttributeModifier("title", "My Card Title"), new $c_Lpreact_test_modifier_ChildModifier("This is the content of the card."), new $c_Lpreact_test_modifier_ChildModifier($m_Lpreact_test_test$package$().j("div", $m_sr_ScalaRunTime$().l(new $ac_O([new $c_Lpreact_test_modifier_ChildModifier("A nested div inside the card."), new $c_Lpreact_test_modifier_ChildModifier($m_Lpreact_test_test$package$().j("button", $m_sr_ScalaRunTime$().l(new $ac_O([new $c_Lpreact_test_modifier_ChildModifier("Nested Button")]))))]))))]))), new $c_Lpreact_test_modifier_ChildModifier($m_Lpreact_test_Card$().W(new $c_sjsr_WrappedVarArgs([new $c_Lpreact_test_modifier_AttributeModifier("title", "My Second Card with Footer"), new $c_Lpreact_test_modifier_AttributeModifier("footer", "This is the footer text."), new $c_Lpreact_test_modifier_ChildModifier("This is the content of the second card.")]))), new $c_Lpreact_test_modifier_ChildModifier($m_Lpreact_test_Card2$().W(new $c_sjsr_WrappedVarArgs([new $c_Lpreact_test_modifier_AttributeModifier("title", "My Card2 with Footer"), new $c_Lpreact_test_modifier_AttributeModifier("footer", "This is the footer text."), new $c_Lpreact_test_modifier_ChildModifier("This is the content of the Card2.")])))])));
 });
 $p.aX = (function() {
   var rootElement = document.body;
@@ -1234,7 +1234,7 @@ function $f_sc_IterableOnceOps__foreach__F1__V($thiz, f) {
   }
 }
 function $f_sc_IterableOnceOps__mkString__T__T__T__T($thiz, start, sep, end) {
-  return (($thiz.t() === 0) ? (("" + start) + end) : $thiz.a7($ct_scm_StringBuilder__(new $c_scm_StringBuilder()), start, sep, end).v.h);
+  return (($thiz.t() === 0) ? (("" + start) + end) : $thiz.a8($ct_scm_StringBuilder__(new $c_scm_StringBuilder()), start, sep, end).v.h);
 }
 function $f_sc_IterableOnceOps__addString__scm_StringBuilder__T__T__T__scm_StringBuilder($thiz, b, start, sep, end) {
   var jsb = b.v;
@@ -1300,8 +1300,8 @@ $p.F = (function(xs, idx) {
   }
   throw new $c_s_MatchError(xs);
 });
-$p.a6 = (function(x) {
-  return $f_sc_IterableOnceOps__mkString__T__T__T__T(x.X(), (x.y() + "("), ",", ")");
+$p.a7 = (function(x) {
+  return $f_sc_IterableOnceOps__mkString__T__T__T__T(x.Y(), (x.y() + "("), ",", ")");
 });
 $p.l = (function(xs) {
   if ((xs === null)) {
@@ -1386,8 +1386,8 @@ function $m_sr_Statics$() {
 }
 /** @constructor */
 function $c_s_util_DynamicVariable(init) {
-  this.a5 = null;
-  this.a5 = init;
+  this.a6 = null;
+  this.a6 = init;
 }
 $p = $c_s_util_DynamicVariable.prototype = new $h_O();
 $p.constructor = $c_s_util_DynamicVariable;
@@ -1396,7 +1396,7 @@ function $h_s_util_DynamicVariable() {
 }
 $h_s_util_DynamicVariable.prototype = $p;
 $p.f = (function() {
-  return (("DynamicVariable(" + this.a5) + ")");
+  return (("DynamicVariable(" + this.a6) + ")");
 });
 var $d_s_util_DynamicVariable = new $TypeData().i($c_s_util_DynamicVariable, "scala.util.DynamicVariable", ({
   bo: 1
@@ -1654,7 +1654,7 @@ function $h_s_Console$() {
 }
 $h_s_Console$.prototype = $p;
 $p.aR = (function() {
-  return this.ah.a5;
+  return this.ah.a6;
 });
 var $d_s_Console$ = new $TypeData().i($c_s_Console$, "scala.Console$", ({
   aq: 1,
@@ -1738,7 +1738,7 @@ $p.constructor = $c_Lpreact_test_Card$;
 function $h_Lpreact_test_Card$() {
 }
 $h_Lpreact_test_Card$.prototype = $p;
-$p.a8 = (function(ms) {
+$p.W = (function(ms) {
   var titleValue = new $c_sr_ObjectRef("");
   var footerValue = new $c_sr_ObjectRef($m_s_None$());
   var childMods = [];
@@ -1792,7 +1792,7 @@ $h_Lpreact_test_Card2$.prototype = $p;
 $p.aA = (function() {
   return [];
 });
-$p.a8 = (function(ms) {
+$p.W = (function(ms) {
   var card = new $c_sr_ObjectRef(new $c_Lpreact_test_Card2("", $m_s_None$(), $m_Lpreact_test_Card2$().aA()));
   ms.O(new $c_sr_AbstractFunction1_$$Lambda$70e1780b84463d18653aacefee3ab989ac625f28(((attr$3) => {
     card.m = card.m.aC(attr$3);
@@ -1922,12 +1922,12 @@ var $d_jl_StringBuilder = new $TypeData().i($c_jl_StringBuilder, "java.lang.Stri
 }));
 /** @constructor */
 function $c_Lpreact_test_Card(title, footer, children) {
+  this.a1 = null;
   this.a0 = null;
   this.Z = null;
-  this.Y = null;
-  this.a0 = title;
-  this.Z = footer;
-  this.Y = children;
+  this.a1 = title;
+  this.a0 = footer;
+  this.Z = children;
 }
 $p = $c_Lpreact_test_Card.prototype = new $h_O();
 $p.constructor = $c_Lpreact_test_Card;
@@ -1935,14 +1935,14 @@ $p.constructor = $c_Lpreact_test_Card;
 function $h_Lpreact_test_Card() {
 }
 $h_Lpreact_test_Card.prototype = $p;
-$p.X = (function() {
+$p.Y = (function() {
   return new $c_s_Product$$anon$1(this);
 });
 $p.k = (function() {
   return $m_s_util_hashing_MurmurHash3$().ac(this, (-590018411), true);
 });
 $p.f = (function() {
-  return $m_sr_ScalaRunTime$().a6(this);
+  return $m_sr_ScalaRunTime$().a7(this);
 });
 $p.G = (function() {
   return 3;
@@ -1953,15 +1953,15 @@ $p.y = (function() {
 $p.H = (function(n) {
   switch (n) {
     case 0: {
-      return this.a0;
+      return this.a1;
       break;
     }
     case 1: {
-      return this.Z;
+      return this.a0;
       break;
     }
     case 2: {
-      return this.Y;
+      return this.Z;
       break;
     }
     default: {
@@ -1972,11 +1972,11 @@ $p.H = (function(n) {
 $p.aV = (function(self) {
   var $x_5 = $m_Lpreact_test_test$package$();
   var $x_4 = $m_sr_ScalaRunTime$();
-  var $x_3 = new $c_Lpreact_test_modifier_ChildModifier($m_Lpreact_test_test$package$().j("h3", $m_sr_ScalaRunTime$().l(new $ac_O([new $c_Lpreact_test_modifier_ChildModifier(this.a0)]))));
-  var $x_2 = new $c_Lpreact_test_modifier_ChildModifier($m_Lpreact_test_test$package$().j("div", $m_sr_ScalaRunTime$().l(new $ac_O([new $c_Lpreact_test_modifier_ChildModifier(this.Y)]))));
+  var $x_3 = new $c_Lpreact_test_modifier_ChildModifier($m_Lpreact_test_test$package$().j("h3", $m_sr_ScalaRunTime$().l(new $ac_O([new $c_Lpreact_test_modifier_ChildModifier(this.a1)]))));
+  var $x_2 = new $c_Lpreact_test_modifier_ChildModifier($m_Lpreact_test_test$package$().j("div", $m_sr_ScalaRunTime$().l(new $ac_O([new $c_Lpreact_test_modifier_ChildModifier(this.Z)]))));
   matchResult4: {
     var $x_1;
-    var x5 = this.Z;
+    var x5 = this.a0;
     if ((x5 instanceof $c_s_Some)) {
       var $x_1 = new $c_Lpreact_test_modifier_ChildModifier($m_Lpreact_test_test$package$().j("div", $m_sr_ScalaRunTime$().l(new $ac_O([new $c_Lpreact_test_modifier_ChildModifier(x5.M)]))));
       break matchResult4;
@@ -2010,14 +2010,14 @@ $p.constructor = $c_Lpreact_test_Card2;
 function $h_Lpreact_test_Card2() {
 }
 $h_Lpreact_test_Card2.prototype = $p;
-$p.X = (function() {
+$p.Y = (function() {
   return new $c_s_Product$$anon$1(this);
 });
 $p.k = (function() {
   return $m_s_util_hashing_MurmurHash3$().ac(this, (-110178308), true);
 });
 $p.f = (function() {
-  return $m_sr_ScalaRunTime$().a6(this);
+  return $m_sr_ScalaRunTime$().a7(this);
 });
 $p.G = (function() {
   return 3;
@@ -2100,7 +2100,7 @@ $h_sc_AbstractIterator.prototype = $p;
 $p.t = (function() {
   return (-1);
 });
-$p.a7 = (function(b, start, sep, end) {
+$p.a8 = (function(b, start, sep, end) {
   return $f_sc_IterableOnceOps__addString__scm_StringBuilder__T__T__T__scm_StringBuilder(this, b, start, sep, end);
 });
 $p.s = (function() {
@@ -2290,7 +2290,7 @@ $p.constructor = $c_s_Option;
 function $h_s_Option() {
 }
 $h_s_Option.prototype = $p;
-$p.X = (function() {
+$p.Y = (function() {
   return new $c_s_Product$$anon$1(this);
 });
 $p.w = (function() {
@@ -2336,7 +2336,7 @@ var $d_s_Product$$anon$1 = new $TypeData().i($c_s_Product$$anon$1, "scala.Produc
   s: 1
 }));
 function $f_sc_Iterable__toString__T($thiz) {
-  return $f_sc_IterableOnceOps__mkString__T__T__T__T($thiz, ($thiz.W() + "("), ", ", ")");
+  return $f_sc_IterableOnceOps__mkString__T__T__T__T($thiz, ($thiz.X() + "("), ", ", ")");
 }
 /** @constructor */
 function $c_sc_Iterator$$anon$19() {
@@ -2569,7 +2569,7 @@ $p.k = (function() {
   return $m_s_util_hashing_MurmurHash3$().ac(this, 1323286827, true);
 });
 $p.f = (function() {
-  return $m_sr_ScalaRunTime$().a6(this);
+  return $m_sr_ScalaRunTime$().a7(this);
 });
 $p.G = (function() {
   return 1;
@@ -2609,20 +2609,20 @@ $h_sc_AbstractIterable.prototype = $p;
 $p.O = (function(f) {
   $f_sc_IterableOnceOps__foreach__F1__V(this, f);
 });
-$p.a7 = (function(b, start, sep, end) {
+$p.a8 = (function(b, start, sep, end) {
   return $f_sc_IterableOnceOps__addString__scm_StringBuilder__T__T__T__scm_StringBuilder(this, b, start, sep, end);
 });
-$p.W = (function() {
+$p.X = (function() {
   return this.P();
 });
 /** @constructor */
 function $c_sc_ArrayOps$ArrayIterator(xs) {
-  this.a2 = null;
+  this.a3 = null;
   this.x = 0;
-  this.a1 = 0;
-  this.a2 = xs;
+  this.a2 = 0;
+  this.a3 = xs;
   this.x = 0;
-  this.a1 = $m_jl_reflect_Array$().a9(xs);
+  this.a2 = $m_jl_reflect_Array$().a9(xs);
 }
 $p = $c_sc_ArrayOps$ArrayIterator.prototype = new $h_sc_AbstractIterator();
 $p.constructor = $c_sc_ArrayOps$ArrayIterator;
@@ -2631,16 +2631,16 @@ function $h_sc_ArrayOps$ArrayIterator() {
 }
 $h_sc_ArrayOps$ArrayIterator.prototype = $p;
 $p.t = (function() {
-  return ((this.a1 - this.x) | 0);
+  return ((this.a2 - this.x) | 0);
 });
 $p.p = (function() {
-  return (this.x < this.a1);
+  return (this.x < this.a2);
 });
 $p.i = (function() {
-  if ((this.x >= $m_jl_reflect_Array$().a9(this.a2))) {
+  if ((this.x >= $m_jl_reflect_Array$().a9(this.a3))) {
     $m_sc_Iterator$().C.i();
   }
-  var r = $m_sr_ScalaRunTime$().F(this.a2, this.x);
+  var r = $m_sr_ScalaRunTime$().F(this.a3, this.x);
   this.x = ((1 + this.x) | 0);
   return r;
 });
@@ -2820,7 +2820,7 @@ function $p_sc_StrictOptimizedLinearSeqOps__loop$2__I__sc_LinearSeq__sc_LinearSe
 }
 /** @constructor */
 function $c_s_reflect_ManifestFactory$PhantomManifest() {
-  this.a3 = null;
+  this.a4 = null;
 }
 $p = $c_s_reflect_ManifestFactory$PhantomManifest.prototype = new $h_s_reflect_ManifestFactory$ClassTypeManifest();
 $p.constructor = $c_s_reflect_ManifestFactory$PhantomManifest;
@@ -2829,7 +2829,7 @@ function $h_s_reflect_ManifestFactory$PhantomManifest() {
 }
 $h_s_reflect_ManifestFactory$PhantomManifest.prototype = $p;
 $p.f = (function() {
-  return this.a3;
+  return this.a4;
 });
 $p.k = (function() {
   return $systemIdentityHashCode(this);
@@ -2848,8 +2848,8 @@ $p.f = (function() {
 });
 /** @constructor */
 function $c_s_reflect_ManifestFactory$ObjectManifest$() {
-  this.a3 = null;
-  this.a3 = "Object";
+  this.a4 = null;
+  this.a4 = "Object";
   $m_sci_Nil$();
 }
 $p = $c_s_reflect_ManifestFactory$ObjectManifest$.prototype = new $h_s_reflect_ManifestFactory$PhantomManifest();
@@ -2984,8 +2984,8 @@ function $h_scm_AbstractSeq() {
 $h_scm_AbstractSeq.prototype = $p;
 /** @constructor */
 function $c_sjsr_WrappedVarArgs(array) {
-  this.a4 = null;
-  this.a4 = array;
+  this.a5 = null;
+  this.a5 = array;
 }
 $p = $c_sjsr_WrappedVarArgs.prototype = new $h_O();
 $p.constructor = $c_sjsr_WrappedVarArgs;
@@ -3008,16 +3008,16 @@ $p.f = (function() {
 $p.O = (function(f) {
   $f_sc_IterableOnceOps__foreach__F1__V(this, f);
 });
-$p.a7 = (function(b, start, sep, end) {
+$p.a8 = (function(b, start, sep, end) {
   return $f_sc_IterableOnceOps__addString__scm_StringBuilder__T__T__T__scm_StringBuilder(this, b, start, sep, end);
 });
 $p.q = (function() {
-  return (this.a4.length | 0);
+  return (this.a5.length | 0);
 });
 $p.n = (function(idx) {
-  return this.a4[idx];
+  return this.a5[idx];
 });
-$p.W = (function() {
+$p.X = (function() {
   return "WrappedVarArgs";
 });
 $p.E = (function(v1) {
@@ -3062,7 +3062,7 @@ $p.t = (function() {
 $p.P = (function() {
   return "IndexedSeq";
 });
-$p.W = (function() {
+$p.X = (function() {
   return "ArraySeq";
 });
 /** @constructor */
@@ -3155,7 +3155,7 @@ $p.q = (function() {
   }
   return len;
 });
-$p.W = (function() {
+$p.X = (function() {
   return "List";
 });
 $p.aH = (function(n) {
@@ -3179,7 +3179,7 @@ $p.constructor = $c_sci_Nil$;
 function $h_sci_Nil$() {
 }
 $h_sci_Nil$.prototype = $p;
-$p.X = (function() {
+$p.Y = (function() {
   return new $c_s_Product$$anon$1(this);
 });
 $p.G = (function() {
