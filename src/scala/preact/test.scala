@@ -85,13 +85,10 @@ object Card:
     val card = Card(titleValue, footerValue, childMods)
     card.render(card)
 
-trait Default[T]:
-  def default: T
-
 case class Card2(
-    title: String,
-    footer: Option[String],
-    children: Children
+    title: String = "",
+    footer: Option[String] = None,
+    children: Children = js.Array()
 ):
   def render: VNode =
     div(
@@ -103,6 +100,9 @@ case class Card2(
         case Some(text) => div(text)
         case None       => NullChild
     )
+
+  // Optionally, the Modifier type and apply method could be derived directly in the class.
+  // Then the companion object is straightforward, and the apply method could just forward to a generic builder.
 
   type Modifier =
     AttributeModifier["title", String] | AttributeModifier["footer", String] |
@@ -120,21 +120,11 @@ case class Card2(
       case cm: ChildModifier =>
         this.copy(children = this.children.concat(js.Array(cm.child)))
 
-object Card2 extends Default[Card2]:
-
-  override def default: Card2 =
-    Card2(
-      title = "",
-      footer = None,
-      children = js.Array()
-    )
-
+object Card2:
   def apply(ms: Card2#Modifier*): VNode =
-    var card = Card2.default
-
+    var card = new Card2
     ms.foreach: attr =>
       card = card.apply(attr)
-
     card.render
 
 def appContent =
@@ -168,7 +158,7 @@ def appContent =
       div("A nested div inside the card.", button("Nested Button"))
     ),
     // Card component with title and children
-    Card(
+    Card2(
       "title" := "My Second Card with Footer",
       "footer" := "This is the footer text.",
       "This is the content of the second card."
