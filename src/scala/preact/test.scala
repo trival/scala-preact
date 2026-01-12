@@ -74,7 +74,7 @@ object Card:
     val childMods = js.Array[Child]()
 
     ms.foreach {
-      case attr: AttributeModifier[String, String] =>
+      case attr: AttributeModifier[?, String] =>
         attr.key match
           case "title"  => titleValue = attr.value
           case "footer" => footerValue = Some(attr.value)
@@ -84,6 +84,58 @@ object Card:
 
     val card = Card(titleValue, footerValue, childMods)
     card.render(card)
+
+trait Default[T]:
+  def default: T
+
+case class Card2(
+    title: String,
+    footer: Option[String],
+    children: Children
+):
+  def render: VNode =
+    div(
+      h3(title), // Card title
+      div(
+        children
+      ), // Card content - spread children as modifiers
+      footer match
+        case Some(text) => div(text)
+        case None       => NullChild
+    )
+
+  type Modifier =
+    AttributeModifier["title", String] | AttributeModifier["footer", String] |
+      ChildModifier
+
+  def apply(mod: Modifier): Card2 =
+    mod match
+      case am: AttributeModifier[?, ?] =>
+        am.key match
+          case "title" =>
+            this.copy(title = am.value.asInstanceOf[String])
+          case "footer" =>
+            this.copy(footer = Some(am.value.asInstanceOf[String]))
+          case _ => this
+      case cm: ChildModifier =>
+        this.copy(children = this.children.concat(js.Array(cm.child)))
+
+object Card2 extends Default[Card2]:
+
+  override def default: Card2 =
+    Card2(
+      title = "",
+      footer = None,
+      children = js.Array()
+    )
+
+  def apply(ms: Card2#Modifier*): VNode =
+    var card = Card2.default
+
+    ms.foreach: attr =>
+      card = card.apply(attr)
+
+    card.render
 
 def appContent =
   div(
