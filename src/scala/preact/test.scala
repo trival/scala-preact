@@ -2,32 +2,11 @@ package preact.test
 
 import org.scalajs.dom
 import preact.bindings.*
+import preact.test.modifier.{*, given}
 
+import scala.deriving.Mirror
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSExportTopLevel
-
-class AttributeModifier[Key <: String, Value](val key: Key, val value: Value):
-  inline def apply(jsAttribs: js.Dynamic): Unit =
-    jsAttribs.updateDynamic(key)(value.asInstanceOf[js.Any])
-
-extension [Key <: String, Value](key: Key)
-  inline def :=(value: Value) = AttributeModifier(key, value)
-
-class ChildModifier(val child: Child):
-  inline def apply(childrenArray: js.Array[Child]): Unit =
-    childrenArray.push(child.asInstanceOf[js.Any])
-
-inline def NullChild: ChildModifier = ChildModifier(())
-
-// Given conversions for children
-given Conversion[String, ChildModifier]:
-  inline def apply(str: String) = ChildModifier(str)
-given Conversion[Int, ChildModifier]:
-  inline def apply(num: Int) = ChildModifier(num)
-given Conversion[Double, ChildModifier]:
-  inline def apply(num: Double) = ChildModifier(num)
-given Conversion[VNode, ChildModifier]:
-  inline def apply(vnode: VNode) = ChildModifier(vnode)
 
 def buildinTagWithChildren[
     Modifier <: AttributeModifier[?, ?] | ChildModifier
@@ -61,10 +40,6 @@ inline def span(ms: DomElement.Modifier*) = buildinTagWithChildren("span", ms)
 inline def h3(ms: DomElement.Modifier*) = buildinTagWithChildren("h3", ms)
 inline def button(ms: DomElement.Modifier*) =
   buildinTagWithChildren("button", ms)
-
-// === component base types ===
-
-type Children = js.Array[Child]
 
 // ===== Example App =====
 
