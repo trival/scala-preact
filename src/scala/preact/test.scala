@@ -120,22 +120,14 @@ case class Card2(
   //       this.copy(children = this.children.concat(js.Array(cm.child)))
 
 object Card2:
-  given componentInstance: Component[Card2] = Component.derived
+  given comp: Component[Card2] = Component.derived
 
-  // ModifierLike accepts any AttributeModifier with matching key and String-compatible value
   type ModifierLike =
     AttributeModifier["title", String] | AttributeModifier["footer", String] |
       ChildModifier
 
-  // Accept modifiers with proper type handling
   def apply(ms: ModifierLike*): VNode =
-    var card = new Card2
-    ms.foreach { m =>
-      card = componentInstance.apply(card)(
-        m.asInstanceOf[componentInstance.Modifier]
-      )
-    }
-    card.render
+    comp.applyAll(new Card2, ms).render
 
 def appContent =
   div(

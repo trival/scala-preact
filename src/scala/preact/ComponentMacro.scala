@@ -1,9 +1,10 @@
 package preact
 
-import scala.quoted.*
-import scala.deriving.Mirror
-import preact.test.modifier.*
 import preact.bindings.Child
+import preact.test.modifier.*
+
+import scala.deriving.Mirror
+import scala.quoted.*
 
 object ComponentMacro:
 

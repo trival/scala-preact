@@ -1,5 +1,7 @@
 package preact
 
+import preact.bindings.VNode
+
 import scala.deriving.Mirror
 
 trait Component[Self]:
@@ -14,4 +16,13 @@ object Component:
     ${ ComponentMacro.derivedImpl[T] }
 
   /** Helper trait for case classes to extend */
-  trait Derived[Self]
+  trait Derived[Self]:
+    def render: VNode
+
+  /** Helper to apply modifiers and build instance */
+  extension [T](comp: Component[T])
+    def applyAll[M](initial: T, modifiers: Seq[M]): T =
+      modifiers
+        .foldLeft(initial)((acc, m) =>
+          comp.apply(acc)(m.asInstanceOf[comp.Modifier])
+        )
