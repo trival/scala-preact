@@ -1,6 +1,7 @@
-package preact.bindings
+package preact.lib1
 
 import scala.scalajs.js
+import preact.bindings.*
 
 /** Minimal HTML element definitions for proof of concept.
   *

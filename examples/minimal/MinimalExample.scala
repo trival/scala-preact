@@ -1,6 +1,7 @@
 package examples.minimal
 
-import preact.bindings.{*, given}
+import preact.lib1.{*, given}
+import preact.bindings.*
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSExportTopLevel
 import org.scalajs.dom

@@ -1,7 +1,8 @@
-package preact.bindings
+package preact.lib1
 
 import scala.scalajs.js
 import scala.collection.mutable
+import preact.bindings.*
 
 // Builder that accumulates modifiers into props and children
 class ElementBuilder:
@@ -16,14 +17,15 @@ class ElementBuilder:
       childrenBuffer += child
 
     case EmptyModifier =>
-      // Do nothing
+    // Do nothing
 
   def addModifiers(mods: Seq[Modifier]): Unit =
     mods.foreach(addModifier)
 
   def build(tag: String): VNode =
     // Only pass props if there are any
-    val jsProps = if hasProps then props.asInstanceOf[js.Object] else js.undefined
+    val jsProps =
+      if hasProps then props.asInstanceOf[js.Object] else js.undefined
     h(tag, jsProps, childrenBuffer.toSeq*)
 
   private def hasProps: Boolean =

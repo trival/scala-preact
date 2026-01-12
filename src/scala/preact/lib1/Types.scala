@@ -1,12 +1,7 @@
-package preact.bindings
+package preact.lib1
 
 import scala.scalajs.js
-
-// VNode type (Preact virtual node)
-type VNode = js.Any
-
-// Child type (anything that can be a child)
-type Child = String | Int | Double | VNode | Unit
+import preact.bindings.*
 
 // Children collection (opaque type)
 opaque type Children = Seq[Child]

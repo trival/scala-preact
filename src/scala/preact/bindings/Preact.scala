@@ -4,17 +4,28 @@ import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport
 import org.scalajs.dom
 
+// VNode type (Preact virtual node)
+type VNode = js.Any
+
+// Child type (anything that can be a child)
+type Child = String | Int | Double | VNode | Unit
+
 // Preact h() function facade
 @js.native
 @JSImport("preact", "h")
 object h extends js.Object:
-  def apply(tag: String | js.Any, props: js.UndefOr[js.Object], children: Child*): VNode = js.native
+  def apply(
+      tag: String | js.Any,
+      props: js.UndefOr[js.Object],
+      children: Child*
+  ): VNode = js.native
 
 // Preact memo() function facade
 @js.native
 @JSImport("preact/compat", "memo")
 object memo extends js.Object:
-  def apply[P](component: js.Function1[P, VNode]): js.Function1[P, VNode] = js.native
+  def apply[P](component: js.Function1[P, VNode]): js.Function1[P, VNode] =
+    js.native
 
 // Preact render() function facade
 @js.native
