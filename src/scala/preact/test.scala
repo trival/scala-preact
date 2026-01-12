@@ -1,6 +1,7 @@
 package preact.test
 
 import org.scalajs.dom
+import preact.Component
 import preact.bindings.*
 import preact.test.modifier.{*, given}
 
@@ -89,7 +90,7 @@ case class Card2(
     title: String = "",
     footer: Option[String] = None,
     children: Children = js.Array()
-):
+) extends Component.Derived[Card2]:
   def render: VNode =
     div(
       h3(title), // Card title
@@ -101,30 +102,39 @@ case class Card2(
         case None       => NullChild
     )
 
-  // Optionally, the Modifier type and apply method could be derived directly in the class.
-  // Then the companion object is straightforward, and the apply method could just forward to a generic builder.
+  // ORIGINAL MANUAL IMPLEMENTATION (for reference):
+  // type Modifier =
+  //   AttributeModifier["title", String] | AttributeModifier["footer", String] |
+  //     ChildModifier
+  //
+  // def apply(mod: Modifier): Card2 =
+  //   mod match
+  //     case am: AttributeModifier[?, ?] =>
+  //       am.key match
+  //         case "title" =>
+  //           this.copy(title = am.value.asInstanceOf[String])
+  //         case "footer" =>
+  //           this.copy(footer = Some(am.value.asInstanceOf[String]))
+  //         case _ => this
+  //     case cm: ChildModifier =>
+  //       this.copy(children = this.children.concat(js.Array(cm.child)))
 
-  type Modifier =
+object Card2:
+  given componentInstance: Component[Card2] = Component.derived
+
+  // ModifierLike accepts any AttributeModifier with matching key and String-compatible value
+  type ModifierLike =
     AttributeModifier["title", String] | AttributeModifier["footer", String] |
       ChildModifier
 
-  def apply(mod: Modifier): Card2 =
-    mod match
-      case am: AttributeModifier[?, ?] =>
-        am.key match
-          case "title" =>
-            this.copy(title = am.value.asInstanceOf[String])
-          case "footer" =>
-            this.copy(footer = Some(am.value.asInstanceOf[String]))
-          case _ => this
-      case cm: ChildModifier =>
-        this.copy(children = this.children.concat(js.Array(cm.child)))
-
-object Card2:
-  def apply(ms: Card2#Modifier*): VNode =
+  // Accept modifiers with proper type handling
+  def apply(ms: ModifierLike*): VNode =
     var card = new Card2
-    ms.foreach: attr =>
-      card = card.apply(attr)
+    ms.foreach { m =>
+      card = componentInstance.apply(card)(
+        m.asInstanceOf[componentInstance.Modifier]
+      )
+    }
     card.render
 
 def appContent =
@@ -165,11 +175,11 @@ def appContent =
       "This is the content of the second card."
     ),
 
-    // Card2 component
+    // Card2 component - using derived Component!
     Card2(
       "title" := "My Card2 with Footer",
       "footer" := "This is the footer text.",
-      "This is the content of the Card2."
+      "This is Card2 content - auto-derived!"
     )
   )
 
