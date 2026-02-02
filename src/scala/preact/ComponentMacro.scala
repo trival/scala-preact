@@ -8,7 +8,7 @@ import scala.quoted.*
 
 object ComponentMacro:
 
-  def derivedImpl[T: Type](using Quotes): Expr[Component[T]] =
+  def derivedImpl[T: Type](using Quotes): Expr[ComponentTest1[T]] =
     import quotes.reflect.*
 
     // Summon the Mirror for the case class
@@ -33,7 +33,7 @@ object ComponentMacro:
             val applyExpr = generateApplyImpl[T, labels, types, modType]
 
             '{
-              new Component[T]:
+              new ComponentTest1[T]:
                 type Modifier = modType
                 def apply(self: T)(modifier: Modifier): T =
                   $applyExpr(modifier, self)
