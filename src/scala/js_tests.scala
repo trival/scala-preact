@@ -2,9 +2,7 @@ package js_tests
 
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters.{*, given}
-
-type Opt[T] = js.UndefOr[T]
-type JS = js.Object
+import preact.js_helpers.*
 
 class Data(val value: String, val count: Int) extends JS
 

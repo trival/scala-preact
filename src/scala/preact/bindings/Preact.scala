@@ -10,6 +10,7 @@ type VNode = js.Any
 
 // Child type (anything that can be a child)
 type Child = String | Int | Double | VNode | Unit
+type Children = js.Array[Child]
 
 // Preact h() function facade
 @js.native

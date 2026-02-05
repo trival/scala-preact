@@ -1,0 +1,116 @@
+package preact.component
+
+import preact.bindings.*
+import preact.js_helpers.*
+
+import scala.quoted.*
+import scala.scalajs.js
+
+class AttributeModifier[Key <: String, Value](val key: Key, val value: Value):
+  inline def apply(jsAttribs: js.Dynamic): Unit =
+    jsAttribs.updateDynamic(key)(value.asInstanceOf[js.Any])
+
+extension [Key <: String, Value](key: Key)
+  inline def :=(value: Value) = AttributeModifier(key, value)
+
+class ChildModifier(val child: Child):
+  inline def apply(childrenArray: js.Array[Child]): Unit =
+    childrenArray.push(child.asInstanceOf[js.Any])
+
+inline def NullChild: ChildModifier = ChildModifier(())
+
+// Given conversions for children
+given Conversion[String, ChildModifier]:
+  inline def apply(str: String) = ChildModifier(str)
+given Conversion[Int, ChildModifier]:
+  inline def apply(num: Int) = ChildModifier(num)
+given Conversion[Double, ChildModifier]:
+  inline def apply(num: Double) = ChildModifier(num)
+given Conversion[VNode, ChildModifier]:
+  inline def apply(vnode: VNode) = ChildModifier(vnode)
+
+// === Component Factory ===
+
+/** Base class for components with auto-derived Modifier type. The Modifier type
+  * is refined by the `component` macro based on the Props type.
+  */
+abstract class ComponentBase[P <: JS](renderFn: P => VNode):
+  type Modifier
+
+  def apply(ms: Modifier*): VNode =
+    val attrs = js.Dynamic.literal()
+    val children = js.Array[Child]()
+    ms.foreach {
+      case am: AttributeModifier[?, ?] =>
+        am(attrs)
+      case cm: ChildModifier =>
+        cm(children)
+    }
+    h(renderFn, attrs, children)
+
+/** Create a component with auto-derived Modifier type from the Props type P.
+  *
+  * Usage:
+  * {{{
+  * trait MyProps extends js.Object:
+  *   val title: String
+  *   val count: Int
+  *
+  * val MyComponent = component[MyProps]: props =>
+  *   div(props.title, props.count.toString)
+  *
+  * // Usage: MyComponent("title" := "Hello", "count" := 42)
+  * }}}
+  */
+transparent inline def component[P <: JS](inline renderFn: P => VNode): Any =
+  ${ componentImpl[P]('renderFn) }
+
+private def componentImpl[P: Type](
+    renderFn: Expr[P => VNode]
+)(using Quotes): Expr[Any] =
+  import quotes.reflect.*
+
+  val tpe = TypeRepr.of[P]
+  val typeSymbol = tpe.typeSymbol
+  val fields = typeSymbol.memberFields
+
+  if fields.isEmpty then
+    report.errorAndAbort(s"Type ${typeSymbol.name} has no fields")
+
+  val childrenType = TypeRepr.of[Children]
+  val attrModSymbol = Symbol.requiredClass("preact.component.AttributeModifier")
+
+  // Separate children field from other fields
+  val (childrenFields, otherFields) = fields.partition { fieldSym =>
+    fieldSym.name == "children" && tpe.memberType(fieldSym) =:= childrenType
+  }
+
+  // Build AttributeModifier[fieldName, fieldType] for non-children fields
+  val fieldTypes: List[TypeRepr] = otherFields.map { fieldSym =>
+    val fieldName = fieldSym.name
+    val memberType = tpe.memberType(fieldSym)
+    val fieldNameType = ConstantType(StringConstant(fieldName))
+    AppliedType(attrModSymbol.typeRef, List(fieldNameType, memberType))
+  }
+
+  // Only add ChildModifier if there's a children: Children field
+  val allTypes =
+    if childrenFields.nonEmpty then fieldTypes :+ TypeRepr.of[ChildModifier]
+    else fieldTypes
+
+  if allTypes.isEmpty then
+    report.errorAndAbort(s"Type ${typeSymbol.name} has no usable fields")
+
+  val unionType = allTypes.reduce((left, right) => OrType(left, right))
+
+  // report.info(s"Component Modifier type: ${unionType.show}")
+
+  // Generate ComponentBase subclass with concrete Modifier type
+  (tpe.asType, unionType.asType) match
+    case ('[p], '[modifierType]) =>
+      '{
+        new ComponentBase[p & JS]($renderFn.asInstanceOf[p & JS => VNode]):
+          type Modifier = modifierType
+      }
+    case _ =>
+      report.errorAndAbort("Failed to construct component types")
