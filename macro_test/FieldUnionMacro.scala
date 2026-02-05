@@ -1,14 +1,14 @@
-package test
+package macro_test
 
 import scala.quoted.*
 import scala.scalajs.js
 
-/** Trait that holds the computed union type of fields.
-  * F is the union type of all Field[name, type] tuples
+/** Trait that holds the computed union type of fields. F is the union type of
+  * all Field[name, type] tuples
   */
-trait FieldUnion[T, F]:
-  def printFields(fields: F*): Unit =
-    println(s"Fields: $fields")
+trait FieldUnion[T, F]
+// def printFields(fields: F*): Unit =
+//   println(s"Fields: $fields")
 
 object FieldUnion:
   /** Extract the Fields union type from a FieldUnion instance.
@@ -59,7 +59,7 @@ object FieldUnion:
       val fieldNameType = ConstantType(StringConstant(fieldName))
 
       // Create Field[FieldNameLiteral, FieldValueType] class type
-      val fieldClassSymbol = Symbol.requiredClass("test.Field")
+      val fieldClassSymbol = Symbol.requiredClass("macro_test.Field")
       val result = AppliedType(
         fieldClassSymbol.typeRef,
         List(fieldNameType, convertedType)
@@ -81,24 +81,3 @@ object FieldUnion:
         '{
           new FieldUnion[T, fieldsType] {}
         }
-
-/** Helper function to convert js.UndefOr[A] to Option[A] */
-private def convertJsUndefOr(using
-    Quotes
-)(tpe: quotes.reflect.TypeRepr): quotes.reflect.TypeRepr =
-  import quotes.reflect.*
-
-  // Dealias type aliases to resolve Opt[A] to js.UndefOr[A]
-  val dealiased = tpe.dealias
-
-  dealiased match
-    // Match js.UndefOr[A] pattern
-    case AppliedType(tycon, List(innerType)) =>
-      // Check if this is js.UndefOr
-      if tycon.typeSymbol.fullName == "scala.scalajs.js.UndefOr" then
-        val result = TypeRepr.of[Option].appliedTo(innerType)
-        report.info(s"  CONVERTED ${tpe.show} -> ${result.show}")
-        result
-      else tpe
-    case _ =>
-      tpe

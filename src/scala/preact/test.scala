@@ -1,9 +1,8 @@
 package preact.test
 
 import org.scalajs.dom
-import preact.ComponentTest1
 import preact.bindings.*
-import preact.test.modifier.{*, given}
+import preact.modifier.{*, given}
 
 import scala.deriving.Mirror
 import scala.scalajs.js
@@ -99,7 +98,7 @@ case class Card2(
     title: String = "",
     footer: Option[String] = None,
     children: Children = js.Array()
-) extends ComponentTest1.Derived[Card2]:
+):
   def render: VNode =
     div(
       h3(title), // Card title
@@ -111,32 +110,27 @@ case class Card2(
         case None       => NullChild
     )
 
-  // ORIGINAL MANUAL IMPLEMENTATION (for reference):
-  // type Modifier =
-  //   AttributeModifier["title", String] | AttributeModifier["footer", String] |
-  //     ChildModifier
-  //
-  // def apply(mod: Modifier): Card2 =
-  //   mod match
-  //     case am: AttributeModifier[?, ?] =>
-  //       am.key match
-  //         case "title" =>
-  //           this.copy(title = am.value.asInstanceOf[String])
-  //         case "footer" =>
-  //           this.copy(footer = Some(am.value.asInstanceOf[String]))
-  //         case _ => this
-  //     case cm: ChildModifier =>
-  //       this.copy(children = this.children.concat(js.Array(cm.child)))
+  def apply(mod: Card2.Modifier): Card2 =
+    mod match
+      case am: AttributeModifier[?, ?] =>
+        am.key match
+          case "title" =>
+            this.copy(title = am.value.asInstanceOf[String])
+          case "footer" =>
+            this.copy(footer = Some(am.value.asInstanceOf[String]))
+          case _ => this
+      case cm: ChildModifier =>
+        this.copy(children = this.children.concat(js.Array(cm.child)))
 
 object Card2:
-  given comp: ComponentTest1[Card2] = ComponentTest1.derived
-
-  type ModifierLike =
+  type Modifier =
     AttributeModifier["title", String] | AttributeModifier["footer", String] |
       ChildModifier
 
-  def apply(ms: ModifierLike*): VNode =
-    comp.applyAll(Card2(), ms).render
+  def apply(ms: Modifier*): VNode =
+    var c = new Card2()
+    for mod <- ms do c = c(mod)
+    c.render
 
 // ==== Component Factory ====
 

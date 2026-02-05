@@ -1,4 +1,4 @@
-package preact.test.modifier
+package preact.modifier
 
 import preact.bindings.*
 

@@ -1,4 +1,4 @@
-package test
+package macro_test
 
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters.{*, given}
@@ -8,9 +8,8 @@ type Opt[A] = js.UndefOr[A]
 class Field[Key <: String, Value](val key: Key, val value: Value)
 
 extension [K <: String & Singleton, V](key: K)
-  inline def :=(value: V): Field[K, V] = ${
-    FieldBuilder.buildImpl('key, 'value)
-  }
+  inline def :=(value: V): Field[K, V] =
+    Field[K, V](key, value)
 
 trait Test extends js.Object:
   val name: String
@@ -43,10 +42,6 @@ type TestFieldsGenerated = FieldUnion.Fields[testFieldUnion.type]
   val fMacro2: TestFieldsGenerated = "age" := 30
   val fMacro3: TestFieldsGenerated = "friends" := Seq("Bob", "Charlie")
   println(s"✓ Generated TestFieldsGenerated works with := extension")
-
-  // Test printFields method
-  testFieldUnion.printFields(f1, fMacro2, f3)
-  println(s"✓ printFields accepts generated union types")
 
   // Verify types are equal
   summon[TestFields =:= TestFieldsGenerated]
