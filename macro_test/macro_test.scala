@@ -4,6 +4,7 @@ import scala.scalajs.js
 import scala.scalajs.js.JSConverters.{*, given}
 
 type Opt[A] = js.UndefOr[A]
+type JS = js.Object
 
 class Field[Key <: String, Value](val key: Key, val value: Value)
 
@@ -11,7 +12,7 @@ extension [K <: String & Singleton, V](key: K)
   inline def :=(value: V): Field[K, V] =
     Field[K, V](key, value)
 
-trait Test extends js.Object:
+trait Test extends JS:
   val name: String
   val age: Opt[Int]
   val friends: Seq[String]
