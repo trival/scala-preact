@@ -8,7 +8,8 @@
     "scala": "scala-cli --power package . --js -o src/out/main.js --force"
   },
   "dependencies": {
-    "preact": "^10.28.2"
+    "preact": "^10.28.2",
+    "@preact/signals": "^1.3.0"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.10.2",

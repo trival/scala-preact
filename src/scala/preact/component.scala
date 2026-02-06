@@ -2,6 +2,7 @@ package preact.component
 
 import preact.bindings.*
 import preact.js_helpers.*
+import preact.signals.{VarContext, ComponentVarContext}
 
 import scala.quoted.*
 import scala.scalajs.js
@@ -37,6 +38,15 @@ given Conversion[VNode, ChildModifier]:
 abstract class ComponentBase[P <: JS](renderFn: P => VNode):
   type Modifier
 
+  // Wrap render function ONCE to inject ComponentVarContext for signals
+  // This must be a stable reference so Preact doesn't remount the component
+  private val wrappedRenderFn: P => VNode = (props: P) =>
+    println(s"[ComponentBase] Rendering component with ComponentVarContext")
+    // Set dynamic context for this render - this affects Var() calls at runtime
+    preact.signals.withContext(ComponentVarContext) {
+      renderFn(props)
+    }
+
   def apply(ms: Modifier*): VNode =
     val attrs = js.Dynamic.literal()
     val children = js.Array[Child]()
@@ -46,7 +56,8 @@ abstract class ComponentBase[P <: JS](renderFn: P => VNode):
       case cm: ChildModifier =>
         cm(children)
     }
-    h(renderFn, attrs, children)
+
+    h(wrappedRenderFn, attrs, children)
 
 /** Create a component with auto-derived Modifier type from the Props type P.
   *
