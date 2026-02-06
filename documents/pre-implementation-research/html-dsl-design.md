@@ -1,9 +1,13 @@
 # HTML DSL Design - Unified Case Class Approach
 
+This document was a sketch pre implementation. see the concrete implementation in `src/scala/preact/**/*` and related files for the actual design and API.
+
 ## Overview
+
 This document details the design of the HTML DSL for Scala Preact bindings, using a **unified case class approach** where HTML elements are defined the same way as custom components - as case classes with a render method. This creates perfect consistency between built-in and custom elements.
 
 See also:
+
 - [Library General](./library-general.md) - Core architecture and types
 - [Component Implementation](./component-implementation.md) - Component definition approaches (component-as-case-class)
 
@@ -153,6 +157,7 @@ object button extends ElementCompanion[button]
 ```
 
 The `ElementCompanion` trait:
+
 1. Generates prop modifiers for each field
 2. Provides `apply(modifiers: Modifier*)` method
 3. Handles special types (Children, ClassName)
@@ -163,6 +168,7 @@ The `ElementCompanion` trait:
 ## Core Concept: The Modifier
 
 Everything that can modify an element is a `Modifier`. This includes:
+
 - Attributes (className, id, href, etc.)
 - Children (text, numbers, other VNodes)
 - Event handlers (onClick, onChange, etc.)
@@ -665,6 +671,7 @@ val app = div(
 ### Type Safety
 
 The current design provides:
+
 - ✅ Compile-time type checking for modifier types
 - ✅ Compile-time type checking for event handler signatures
 - ✅ Compile-time type checking for prop values (via Scala's type system)
@@ -695,6 +702,7 @@ div(
 ### Comparison with Original Design
 
 **Original Design** (two parameter lists):
+
 ```scala
 div(className := "foo")(
   h1()("Hello"),
@@ -703,6 +711,7 @@ div(className := "foo")(
 ```
 
 **New Design** (unified modifiers):
+
 ```scala
 div(
   className := "foo",
@@ -712,6 +721,7 @@ div(
 ```
 
 **Benefits of new design**:
+
 1. More natural mixing of attributes and children
 2. Conditional modifiers easier to express
 3. Matches Laminar's proven API design
@@ -719,6 +729,7 @@ div(
 5. No need for empty `()` when no attributes
 
 **Tradeoffs**:
+
 1. Requires builder pattern (small runtime overhead)
 2. Slightly more complex implementation
 3. Type inference might need hints in complex cases
@@ -750,18 +761,21 @@ div(
 ## Future Enhancements
 
 ### Short-term
+
 - [ ] Add comprehensive HTML5 attribute support
 - [ ] Add SVG element and attribute support
 - [ ] Add more event handlers (keyboard, mouse, touch, drag)
-- [ ] Add aria-* and data-* attribute helpers
+- [ ] Add aria-_ and data-_ attribute helpers
 
 ### Medium-term
+
 - [ ] Type-safe CSS-in-Scala for styles
 - [ ] Phantom types for tag-specific attributes
 - [ ] Custom element support
 - [ ] Slot support for web components
 
 ### Advanced
+
 - [ ] Signal integration (reactive properties like Laminar)
 - [ ] Automatic key generation for lists
 - [ ] CSS module integration
@@ -772,6 +786,7 @@ div(
 ## Summary
 
 This design provides a **Laminar-inspired unified modifier API** that:
+
 - ✅ Mixes attributes and children naturally
 - ✅ Uses builder pattern for flexibility
 - ✅ Maintains type safety

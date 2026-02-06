@@ -1,5 +1,7 @@
 # Scala 3 Preact Bindings - Implementation Overview
 
+This document was a sketch pre implementation. see the concrete implementation in `src/scala/preact/**/*` and related files for the actual design and API.
+
 ## Overview
 
 This document serves as the main index for the Scala 3 Preact bindings implementation planning. The design has been split into focused documents for easier iteration and refinement.

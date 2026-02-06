@@ -1,5 +1,7 @@
 # Plan: Auto-Derive Component Trait with Modifier Type and Apply Method
 
+This document was a sketch pre implementation. see the concrete implementation in `src/scala/preact/**/*` and related files for the actual design and API.
+
 ## Overview
 
 Implement a `Component` trait with a `derived` macro that auto-generates:
@@ -47,13 +49,11 @@ The macro (in `ComponentMacro.scala`) will:
    ```
 
 2. **Build Modifier union type** by recursively processing label/type tuples:
-
    - For each field except "children": Create `AttributeModifier[labelLiteral, fieldType]`
    - If "children" field exists: Add `ChildModifier` to union
    - Combine with `OrType(left, right)` to build: `Attr1 | Attr2 | ... | ChildModifier`
 
 3. **Generate apply method** with pattern matching:
-
    - Match on `AttributeModifier[?, ?]` → nested match on `attr.key` → call `copy(field = value)`
    - Match on `ChildModifier` → call `copy(children = children :+ child)`
    - Use reflection API to call `copy()` with named arguments
@@ -72,7 +72,6 @@ The macro (in `ComponentMacro.scala`) will:
 1. **String literal types**: Use `ConstantType(StringConstant(str))` to create types like `"title"` (not just `String`)
 
 2. **Dynamic copy() calls**: Use reflection API:
-
    - Get class symbol's `copy` method
    - Build `NamedArg` for each parameter
    - Modified field gets new value, others get current value via `Select(self, getter)`

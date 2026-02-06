@@ -1,5 +1,8 @@
 # Preact Signals Integration with `Var` and Scala 3 Context
 
+All features are successfully implememted and tested. See `src/scala/preact/signals/**/*` for the actual implementation and `src/scala/preact/test.scala` for usage examples.
+This document was a sketch pre implementation. see the concrete implementation in `src/scala/preact/**/*` and related files for the actual design and API.
+
 ## Overview
 
 Integrate Preact Signals into the Scala Preact bindings using `Var` naming (not `Signal`) and Scala 3's `given`/`using` contextual abstractions to automatically dispatch between `signal()` (global) and `useSignal()` (component-local).
@@ -7,6 +10,7 @@ Integrate Preact Signals into the Scala Preact bindings using `Var` naming (not 
 ## Key Design Decision
 
 Use Scala 3's `given`/`using` to provide different `VarContext` implementations:
+
 - **Global context**: Uses `signal()` from `@preact/signals` for global reactive state
 - **Component context**: Uses `useSignal()` hook for component-local reactive state
 
@@ -207,6 +211,7 @@ abstract class ComponentBase[P <: JS](renderFn: P => VNode):
 ```
 
 **Import addition at top of file**:
+
 ```scala
 import preact.signals.{VarContext, ComponentVarContext}
 ```
@@ -251,6 +256,7 @@ given Conversion[ReadVar[VNode], ChildModifier] =
 ### Unit Tests
 
 1. **Global Var creation** (`test/scala/preact/signals/VarTest.scala`):
+
    ```scala
    val v = Var(42)
    assert(v() == 42)
@@ -261,6 +267,7 @@ given Conversion[ReadVar[VNode], ChildModifier] =
    ```
 
 2. **Memo values**:
+
    ```scala
    val a = Var(2)
    val b = Var(3)

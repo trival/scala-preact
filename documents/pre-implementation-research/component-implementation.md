@@ -1,5 +1,7 @@
 # Component Implementation - Design Approaches
 
+This document was a sketch pre implementation. see the concrete implementation in `src/scala/preact/**/*` and related files for the actual design and API.
+
 ## Overview
 
 This document explores different approaches for implementing Scala 3 Preact component bindings, with their performance characteristics and implementation tradeoffs.
@@ -86,6 +88,7 @@ Button(
 **Implementation**:
 
 The `ComponentCompanion[T]` trait uses Scala 3 derivation to:
+
 1. Extract case class fields and generate prop modifiers (`Button.label`, `Button.disabled`, etc.)
 2. Generate `apply(modifiers: Modifier*)` method that builds component from modifiers
 3. Handle special types (`Children`, `ClassName`) with automatic accumulation
@@ -127,6 +130,7 @@ ExternalButton(
 ```
 
 **Implementation complexity**: MEDIUM-HIGH
+
 - Requires Scala 3 derivation mechanism for typeclass
 - Companion object pattern to generate modifiers
 - Builder logic to construct case class from modifiers
@@ -245,6 +249,7 @@ Preact Signals provides **fine-grained reactivity** that bypasses Virtual DOM di
 ### When to Use Each Approach
 
 **Unified Component-as-Case-Class (Preferred)**:
+
 - ✅ Most components - this is the recommended default
 - ✅ Components with multiple props
 - ✅ Components that accept children or className
@@ -252,6 +257,7 @@ Preact Signals provides **fine-grained reactivity** that bypasses Virtual DOM di
 - ✅ External JS components that need Scala facades
 
 **Functional Components + memo() (Alternative)**:
+
 - ✅ Very simple components without props
 - ✅ Quick prototyping or examples
 - ✅ When you prefer separating props from render logic
@@ -259,16 +265,16 @@ Preact Signals provides **fine-grained reactivity** that bypasses Virtual DOM di
 
 **Comparison Table**:
 
-| Aspect | Component-as-Case-Class | Functional + memo() |
-|--------|------------------------|---------------------|
-| Definition | Single case class with render | Separate props + function |
-| Props access | `field` or `this.field` | `props.field` |
-| Syntax | Unified with HTML DSL | Traditional function call |
-| Boilerplate | Minimal (case class + render) | Low (function only) |
-| Children/ClassName | Natural fields | Manual handling |
-| External components | Same pattern | Requires wrapper |
-| Mental model | OOP (component is object) | FP (function of props) |
-| Implementation | MEDIUM-HIGH complexity | LOW complexity |
+| Aspect              | Component-as-Case-Class       | Functional + memo()       |
+| ------------------- | ----------------------------- | ------------------------- |
+| Definition          | Single case class with render | Separate props + function |
+| Props access        | `field` or `this.field`       | `props.field`             |
+| Syntax              | Unified with HTML DSL         | Traditional function call |
+| Boilerplate         | Minimal (case class + render) | Low (function only)       |
+| Children/ClassName  | Natural fields                | Manual handling           |
+| External components | Same pattern                  | Requires wrapper          |
+| Mental model        | OOP (component is object)     | FP (function of props)    |
+| Implementation      | MEDIUM-HIGH complexity        | LOW complexity            |
 
 **Recommendation**: Start with Component-as-Case-Class for most use cases. Both compile to the same Preact functional components, but the unified approach provides better ergonomics and consistency.
 
@@ -309,6 +315,7 @@ The implementation follows a straightforward path:
 ### Overview
 
 Component props use a **derived modifier pattern** that provides:
+
 - ✅ **Zero boilerplate** - Define props as case classes (same as before)
 - ✅ **Unified syntax** - Components and HTML elements use identical modifier syntax
 - ✅ **Automatic derivation** - Macro generates modifier schema from case class
@@ -489,15 +496,15 @@ object Button:
 
 ### Benefits
 
-| Feature | Traditional Props | Modifier Pattern |
-|---------|------------------|------------------|
-| Syntax consistency | ❌ Different from HTML | ✅ Identical to HTML DSL |
-| Children handling | ⚠️ Manual field | ✅ Automatic accumulation |
-| ClassName handling | ⚠️ Manual concatenation | ✅ Automatic with `cls` |
-| Default values | ✅ Case class defaults | ✅ Case class defaults |
-| Type safety | ✅ Good | ✅ Excellent (required validation) |
-| Definition | ✅ Simple case class | ✅ Same case class |
-| Performance | ✅ Excellent | ✅ Good (small overhead) |
+| Feature            | Traditional Props       | Modifier Pattern                   |
+| ------------------ | ----------------------- | ---------------------------------- |
+| Syntax consistency | ❌ Different from HTML  | ✅ Identical to HTML DSL           |
+| Children handling  | ⚠️ Manual field         | ✅ Automatic accumulation          |
+| ClassName handling | ⚠️ Manual concatenation | ✅ Automatic with `cls`            |
+| Default values     | ✅ Case class defaults  | ✅ Case class defaults             |
+| Type safety        | ✅ Good                 | ✅ Excellent (required validation) |
+| Definition         | ✅ Simple case class    | ✅ Same case class                 |
+| Performance        | ✅ Excellent            | ✅ Good (small overhead)           |
 
 ---
 
@@ -665,6 +672,7 @@ Only implement the inline macro optimization if:
 The component and props system will be implemented in phases:
 
 ### Phase 1: Core Component System
+
 1. Implement `component[Props]` helper with `memo()` wrapper
 2. Support basic case class props (traditional syntax)
 3. Type system for `Props`, `Component`, `ComponentFunction`
@@ -673,6 +681,7 @@ The component and props system will be implemented in phases:
 **Deliverable**: Functional components work with case class props
 
 ### Phase 2: Special Types (Children & ClassName)
+
 1. Define `Children` opaque type
 2. Define `ClassName` opaque type
 3. Components can accept and use these special types
@@ -681,6 +690,7 @@ The component and props system will be implemented in phases:
 **Deliverable**: Components can use `Children` and `ClassName` explicitly
 
 ### Phase 3: Modifier Pattern Derivation
+
 1. Implement Scala 3 macro to derive modifier schema from case class
 2. Generate prop modifier objects in companion object
 3. Generate component `apply` method accepting `Modifier*`
@@ -689,6 +699,7 @@ The component and props system will be implemented in phases:
 **Deliverable**: Modifier syntax works for component props
 
 ### Phase 4: Automatic Accumulation
+
 1. Special handling for `ChildModifier` → accumulate into `children` prop
 2. Special handling for `ClsModifier` (`cls := "x"`) → accumulate into `className` prop
 3. Type-level detection of `Children`/`ClassName` fields in props
@@ -697,6 +708,7 @@ The component and props system will be implemented in phases:
 **Deliverable**: Children and className accumulate automatically
 
 ### Phase 5: Type-Level Validation
+
 1. Match types to extract required vs optional fields
 2. Compile-time validation that required props are provided
 3. Clear error messages for missing required props
@@ -705,6 +717,7 @@ The component and props system will be implemented in phases:
 **Deliverable**: Compile-time safety for required props
 
 ### Phase 6: Polish & Optimization
+
 1. Optimize builder to reduce allocations
 2. Inline builder logic where possible
 3. Support complex default value expressions
@@ -720,6 +733,7 @@ The component and props system will be implemented in phases:
 This document defines the component implementation approach for Scala 3 Preact bindings:
 
 **Preferred Design - Unified Component-as-Case-Class**:
+
 - ✅ **Single definition**: Component and props unified - case class fields ARE the props
 - ✅ **Natural Scala**: Component instance = props, `render` method for output
 - ✅ **Zero boilerplate**: Just define `case class MyComponent(...): def render = ...`
@@ -728,6 +742,7 @@ This document defines the component implementation approach for Scala 3 Preact b
 - ✅ **Hooks-compatible**: Compiles to memoized functional components for `useSignal()`, `useSignalEffect()`
 
 **Core Design Principles**:
+
 - Component case class fields define the props (immutable by default)
 - `render` method returns VNode using HTML DSL
 - Companion object extends `ComponentCompanion[T]` for modifier generation
@@ -735,6 +750,7 @@ This document defines the component implementation approach for Scala 3 Preact b
 - Compiles to Preact's `h()` calls with `memo()` wrapping
 
 **Props Innovation with Derived Modifier Pattern**:
+
 - ✅ **Automatic derivation**: Companion generates prop modifiers from case class fields
 - ✅ **Special types**: `Children` and `ClassName` accumulate automatically
 - ✅ **Type safety**: Compile-time validation of required props
@@ -742,6 +758,7 @@ This document defines the component implementation approach for Scala 3 Preact b
 - ✅ **External components**: Same pattern works for imported JS components
 
 **Key Benefits**:
+
 - ✅ Excellent performance (compiles to memoized functional components)
 - ✅ Full compatibility with Preact Signals hooks
 - ✅ Unified markup language (components = HTML elements)
@@ -750,6 +767,7 @@ This document defines the component implementation approach for Scala 3 Preact b
 - ✅ Works with both internal and external (JS) components
 
 **Implementation Status**:
+
 - Component-as-case-class pattern designed as preferred approach
 - Alternative functional component pattern available for simpler cases
 - Props modifier pattern designed with automatic derivation

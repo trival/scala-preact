@@ -272,7 +272,7 @@ const AppState = createContext();
 render(
   <AppState.Provider value={createAppState()}>
     <App />
-  </AppState.Provider>
+  </AppState.Provider>,
 );
 
 // ...later when you need access to your app state

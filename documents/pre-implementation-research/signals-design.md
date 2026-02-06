@@ -1,5 +1,7 @@
 # Signals and State Management - Preact Signals Integration
 
+This document was a sketch pre implementation. see the concrete implementation in `src/scala/preact/**/*` and related files for the actual design and API.
+
 ## Overview
 
 This document details the design for integrating Preact Signals as a first-class citizen in the Scala Preact bindings. Signals provide automatic fine-grained reactivity that eliminates unnecessary re-renders and serves as the primary state management solution.
@@ -38,192 +40,7 @@ Preact Signals is a performant state management library that provides:
 
 ---
 
-## Core Signal Types
-
-### JavaScript Facades
-
-First, define facades for Preact Signals:
-
-```scala
-package preact.bindings.signals
-
-import scala.scalajs.js
-import scala.scalajs.js.annotation.*
-
-// Core Signal type from @preact/signals
-@js.native
-trait ReadonlySignal[+A] extends js.Object:
-  def value: A = js.native
-  // Signals can be called directly in JSX/h() and track automatically
-  // In our DSL, we'll use .value or conversions
-
-@js.native
-trait Signal[A] extends ReadonlySignal[A]:
-  override var value: A = js.native
-
-// Computed signals (derived values)
-@js.native
-trait Computed[+A] extends ReadonlySignal[A]
-
-// Effect for side effects
-@js.native
-trait EffectHandle extends js.Object:
-  def dispose(): Unit = js.native
-
-// Signal creation functions
-@js.native
-@JSImport("@preact/signals", JSImport.Namespace)
-object SignalsJS extends js.Object:
-  def signal[A](initialValue: A): Signal[A] = js.native
-  def computed[A](fn: js.Function0[A]): Computed[A] = js.native
-  def effect(fn: js.Function0[Unit]): EffectHandle = js.native
-  def batch(fn: js.Function0[Unit]): Unit = js.native
-```
-
----
-
-## Scala Signal Wrappers
-
-Provide idiomatic Scala wrappers:
-
-```scala
-package preact.bindings
-
-import scala.scalajs.js
-
-// Read-only signal (covariant)
-trait ReadSignal[+A]:
-  protected def underlying: signals.ReadonlySignal[A]
-
-  // Get current value
-  def now: A = underlying.value
-
-  // Alias for now (more readable in some contexts)
-  inline def apply(): A = now
-
-  // Map to create derived signal
-  def map[B](f: A => B): ReadSignal[B] =
-    Computed(signals.SignalsJS.computed(() => f(underlying.value)))
-
-// Writable signal
-trait WriteSignal[A] extends ReadSignal[A]:
-  override protected def underlying: signals.Signal[A]
-
-  // Set new value
-  def set(value: A): Unit = underlying.value = value
-
-  // Update via function
-  def update(f: A => A): Unit = set(f(now))
-
-  // Scala-style update syntax: signal() = value
-  inline def update(value: A): Unit = set(value)
-
-// Concrete implementations
-final class Var[A](protected val underlying: signals.Signal[A]) extends WriteSignal[A]
-final class Computed[A](protected val underlying: signals.Computed[A]) extends ReadSignal[A]
-
-// Signal creation
-object Signal:
-  // Create mutable signal
-  def apply[A](initialValue: A): Var[A] =
-    new Var(signals.SignalsJS.signal(initialValue))
-
-  // Create computed signal (derived value)
-  def computed[A](computation: => A): Computed[A] =
-    new Computed(signals.SignalsJS.computed(() => computation))
-
-  // Run side effect that tracks signal dependencies
-  def effect(body: => Unit): EffectHandle =
-    signals.SignalsJS.effect(() => body)
-
-  // Batch multiple signal updates
-  def batch(updates: => Unit): Unit =
-    signals.SignalsJS.batch(() => updates)
-```
-
----
-
-## Integration with HTML DSL
-
-Signals should work seamlessly in the modifier system:
-
-```scala
-package preact.bindings
-
-// Add signal-specific modifiers
-object SignalModifiers:
-
-  // Convert signal to child modifier (text content)
-  given Conversion[ReadSignal[String], Modifier] =
-    signal => ChildModifier(signal.underlying.value.asInstanceOf[Child])
-
-  given Conversion[ReadSignal[Int], Modifier] =
-    signal => ChildModifier(signal.underlying.value.asInstanceOf[Child])
-
-  given Conversion[ReadSignal[Double], Modifier] =
-    signal => ChildModifier(signal.underlying.value.asInstanceOf[Child])
-
-  // Signal of VNode
-  given Conversion[ReadSignal[VNode], Modifier] =
-    signal => ChildModifier(signal.underlying.value.asInstanceOf[Child])
-
-  // Reactive attributes: attribute value is a signal
-  extension [A](key: String)
-    infix def <~(signal: ReadSignal[A]): Modifier =
-      PropModifier(key, signal.underlying.value.asInstanceOf[js.Any])
-
-  // Reactive class names
-  def classNameSignal(signal: ReadSignal[String]): Modifier =
-    PropModifier("className", signal.underlying.value.asInstanceOf[js.Any])
-
-  // Reactive styles
-  def styleSignal(styles: (String, ReadSignal[Any])*): Modifier =
-    StyleModifier(styles.map((k, sig) => (k, sig.now)))
-
-// Include in main DSL
-object Dsl:
-  export Tags.*
-  export Modifiers.{*, given}
-  export SignalModifiers.{*, given}
-```
-
-**Note on reactivity**: Preact Signals automatically tracks when components read signal values. When you use `signal.underlying.value` in a component's render function, Preact tracks it and only re-renders that component when the signal changes.
-
----
-
 ## Usage Examples
-
-### Basic Signal Usage
-
-```scala
-import preact.bindings.*
-import scala.scalajs.js
-
-// Create a signal
-val count = Signal(0)
-
-// Read value
-println(count.now) // 0
-println(count())   // 0
-
-// Update value
-count.set(5)
-count.update(_ + 1) // now 6
-count() = 10        // Scala update syntax
-
-// Component using signal
-val Counter = component: () =>
-  div(
-    h2("Counter"),
-    p(s"Count: ${count.now}"),
-    button(
-      onClick := (_ => count.update(_ + 1)),
-      "Increment"
-    )
-  )
-```
-
-**Important**: Reading `count.now` in a component automatically subscribes that component to changes. Only that component re-renders when the signal changes.
 
 ### Computed Signals
 
@@ -648,21 +465,17 @@ val doubled: ReadSignal[Int] = intSignal.map(_ * 2)
 ### File Structure
 
 1. **src/scala/preact/bindings/signals/Facades.scala**
-
    - JavaScript facades for @preact/signals
 
 2. **src/scala/preact/bindings/Signal.scala**
-
    - Scala wrappers: ReadSignal, WriteSignal, Var, Computed
    - Signal object with creation methods
 
 3. **src/scala/preact/bindings/SignalModifiers.scala**
-
    - Integration with HTML DSL
    - Conversions for signals in modifiers
 
 4. **src/scala/preact/bindings/Context.scala**
-
    - Context API facades
    - SignalContext wrapper
 

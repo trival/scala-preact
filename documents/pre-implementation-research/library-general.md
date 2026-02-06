@@ -1,11 +1,16 @@
 # Scala 3 Preact Bindings - Library General Architecture
 
+This document was a sketch pre implementation. see the concrete implementation in `src/scala/preact/**/*` and related files for the actual design and API.
+
 ## Overview
+
 This document covers the general architecture, core types, facades, and implementation roadmap for Scala 3 bindings to Preact. For specific aspects, see:
+
 - [Component Implementation](./component-implementation.md) - Component definition APIs and approaches
 - [HTML DSL Design](./html-dsl-design.md) - Laminar-inspired unified modifier API
 
 ## Project Context
+
 - **Build System**: scala-cli with project.scala
 - **Scala Version**: 3.8.0-RC5 (with improved Scala.js support and macros)
 - **Scala.js**: 1.20.2 with ES modules
@@ -13,6 +18,7 @@ This document covers the general architecture, core types, facades, and implemen
 - **Code Style**: Braceless syntax (Scala 3 style)
 
 ## Core Requirements
+
 1. Function-based Scala code that compiles to Preact components
 2. Automatic performance optimization leveraging Scala's immutability
 3. Props using case classes (immutable by default)
@@ -22,6 +28,7 @@ This document covers the general architecture, core types, facades, and implemen
 7. Minimal, testable implementation to evaluate approaches
 
 ## Design Principles
+
 - Thin abstraction over Preact's JavaScript API
 - Zero or minimal runtime overhead
 - Leverage immutability for automatic performance optimization
@@ -66,6 +73,7 @@ type SimpleComponent = () => VNode
 ```
 
 **Key Design Decisions**:
+
 - Opaque VNode prevents mixing with arbitrary js.Any while maintaining zero cost
 - Multiple Child types for flexibility (strings, numbers, booleans, vnodes)
 - Props trait ensures JS compatibility
@@ -115,6 +123,7 @@ def memo[P <: Props](
 ```
 
 **Key Design Decisions**:
+
 - Use @JSImport for ES modules (matches project's jsModuleKind)
 - Include both Component class facade and memo() for flexibility
 - Varargs for children to match Preact's API
@@ -159,6 +168,7 @@ package object bindings:
 ```
 
 **Key Design Decisions**:
+
 - Single import point: `import preact.bindings.*`
 - Re-export all public API
 - Hide internal implementation details
@@ -169,6 +179,7 @@ package object bindings:
 ## Implementation Steps
 
 ### Phase 1: Foundation (Types & Facades)
+
 1. Update project.scala with scalajs-dom dependency
 2. Create Types.scala with VNode, Props, Child types
 3. Create Facades.scala with @JSImport bindings to Preact (h, render, Fragment, memo)
@@ -176,6 +187,7 @@ package object bindings:
 5. Verify memo() facade works
 
 ### Phase 2: Component System
+
 See [Component Implementation](./component-implementation.md) for detailed design.
 
 1. Decide on initial component approach (likely memo wrapper for simplicity)
@@ -186,6 +198,7 @@ See [Component Implementation](./component-implementation.md) for detailed desig
 6. Write simple example component
 
 ### Phase 3: HTML DSL
+
 See [HTML DSL Design](./html-dsl-design.md) for detailed design.
 
 1. Implement unified Modifier system (Laminar-inspired)
@@ -196,6 +209,7 @@ See [HTML DSL Design](./html-dsl-design.md) for detailed design.
 6. Expand element coverage as needed
 
 ### Phase 4: Public API & Testing
+
 1. Create package.scala with exports
 2. Ensure clean API surface
 3. Write complete example application
@@ -203,12 +217,14 @@ See [HTML DSL Design](./html-dsl-design.md) for detailed design.
 5. Test development workflow and hot reload
 
 ### Phase 5: Performance Evaluation
+
 1. Benchmark the chosen approach
 2. Profile rendering performance
 3. Evaluate if optimizations are needed
 4. Document findings for future improvements
 
 ### Phase 6: Build Integration
+
 1. Ensure Vite can bundle Scala.js output
 2. Configure source maps for debugging
 3. Test production build optimization
@@ -275,6 +291,7 @@ Note: The unified modifier syntax means attributes and children are mixed in a s
 ## Future Enhancements
 
 ### Immediate Next Steps
+
 After the minimal implementation, consider:
 
 1. **Named Tuple Props Support**
@@ -293,13 +310,15 @@ After the minimal implementation, consider:
    - Custom element support
 
 ### Medium-term Extensions
+
 - **Hooks** (useState, useEffect, useMemo, useCallback, useRef, useContext)
 - **Context API** (createContext, Provider, Consumer)
 - **Refs** (createRef, useRef, forwardRef)
 - **Type-safe events** (specific event types for different handlers)
-- **More attributes** (aria-*, data-*, all HTML5 attributes)
+- **More attributes** (aria-_, data-_, all HTML5 attributes)
 
 ### Advanced Features
+
 - **Portals** - render children into different DOM nodes
 - **Error boundaries** - catch errors in component tree
 - **Suspense** - async component loading
@@ -311,6 +330,7 @@ After the minimal implementation, consider:
 ## Technical Considerations
 
 ### Scala.js Interop
+
 - Using @JSImport for ES modules (matches jsModuleKind es)
 - Props must extend js.Object for JS compatibility
 - Event handlers must be js.Function types
@@ -318,6 +338,7 @@ After the minimal implementation, consider:
 - Opaque types provide zero-cost abstractions
 
 ### Performance
+
 - **Opaque types** = zero runtime overhead
 - **inline functions** = direct JS code generation
 - **Modifier accumulation** = O(n) where n = number of modifiers (typically 3-10)
@@ -325,6 +346,7 @@ After the minimal implementation, consider:
 - **Builder pattern** = small allocation overhead, excellent ergonomics
 
 ### Type Safety
+
 - VNode opaque type prevents js.Any mixing
 - Props trait ensures JS compatibility
 - Modifier ADT enables compile-time checking
@@ -332,6 +354,7 @@ After the minimal implementation, consider:
 - Compile-time guarantee of prop types
 
 ### Build System
+
 - scala-cli for simple project structure
 - Vite for fast development and bundling
 - ES modules throughout for modern JavaScript
@@ -342,19 +365,24 @@ After the minimal implementation, consider:
 ## Files to Create/Modify
 
 ### New Files (Phase 1)
+
 1. **src/scala/preact/bindings/Types.scala** - Core type definitions
 2. **src/scala/preact/bindings/Facades.scala** - JavaScript facades
 
 ### New Files (Phase 2)
+
 3. **src/scala/preact/bindings/Component.scala** - Component helpers (see component-implementation.md)
 
 ### New Files (Phase 3)
+
 4. **src/scala/preact/bindings/Dsl.scala** - HTML DSL with unified modifiers (see html-dsl-design.md)
 
 ### New Files (Phase 4)
+
 5. **src/scala/preact/bindings/package.scala** - Public API exports
 
 ### Files to Modify
+
 1. **project.scala** - Add scalajs-dom dependency
 2. **src/scala/preact/bindings.scala** - Remove (replaced by package structure)
 3. **vite.config.ts** - Configure to include Scala.js output
@@ -363,5 +391,6 @@ After the minimal implementation, consider:
 ---
 
 ## Related Documents
+
 - [Component Implementation](./component-implementation.md) - Detailed component API design
 - [HTML DSL Design](./html-dsl-design.md) - Laminar-inspired modifier system
