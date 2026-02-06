@@ -19,23 +19,32 @@ def buildinTagWithChildren[
   var jsAttribs = js.Dynamic.literal()
   var childrenArray = js.Array[Child]()
 
-  modifiers.foreach {
+  modifiers.foreach:
     case am: AttributeModifier[?, ?] =>
-      am(jsAttribs)
+      if am.key == "cls" then
+        // Special handling for "cls" to concatenate multiple class values
+        if am.value != js.undefined && am.value != "" then
+          val existing = jsAttribs.selectDynamic("class")
+          val newValue =
+            if existing != js.undefined then s"$existing ${am.value}"
+            else am.value
+          jsAttribs.updateDynamic("class")(newValue.asInstanceOf[js.Any])
+      else am(jsAttribs)
+
     case cm: ChildModifier =>
       cm(childrenArray)
-  }
 
   h(tag, jsAttribs, childrenArray)
 
 object DomElement:
+  type Key = AttributeModifier["key", String]
   type Id = AttributeModifier["id", String]
-  type Cls = AttributeModifier["class", Opt[String]]
+  type Cls = AttributeModifier["cls", Opt[String]]
   type Disabled = AttributeModifier["disabled", Boolean]
   type OnClick =
     AttributeModifier["onClick", js.Function1[dom.MouseEvent, Unit]]
 
-  type Modifier = Id | Cls | Disabled | OnClick | ChildModifier
+  type Modifier = Id | Key | Cls | Disabled | OnClick | ChildModifier
 
 inline def div(ms: DomElement.Modifier*) = buildinTagWithChildren("div", ms)
 inline def span(ms: DomElement.Modifier*) = buildinTagWithChildren("span", ms)
@@ -46,7 +55,7 @@ inline def button(ms: DomElement.Modifier*) =
 
 // === Component API Examples ===
 
-trait CardProps extends JS:
+trait CardProps extends Props:
   val title: String
   val footer: Opt[String]
   val children: Children
@@ -54,14 +63,24 @@ trait CardProps extends JS:
 
 val Card = component[CardProps]: props =>
   div(
-    "class" := props.cls,
-    h3(props.title), // Card title
+    "cls" := "bg-white rounded-xl shadow-md p-6 border border-gray-200",
+    "cls" := props.cls,
+    h3(
+      "cls" := "text-lg font-semibold text-gray-800 mb-3",
+      props.title
+    ),
     div(
+      "cls" := "text-gray-600",
       props.children
-    ), // Card content - spread children as modifiers
+    ),
     props.footer
-      .map[ChildModifier](text => div(text))
-      .getOrElse(NullChild) // Card footer if exists
+      .map[ChildModifier](text =>
+        div(
+          "cls" := "mt-4 pt-3 border-t border-gray-100 text-sm text-gray-500",
+          text
+        )
+      )
+      .getOrElse(NullChild)
   )
 
 // === Signal Examples ===
@@ -69,92 +88,144 @@ val Card = component[CardProps]: props =>
 // Global state - uses signal()
 val globalTheme = Var("light")
 
-trait CounterProps extends JS:
-  val key: Opt[String] // Dummy prop to satisfy component macro
-
 // Component with local signal state - uses useSignal()
-val SignalCounter = component[CounterProps]: _ =>
+val SignalCounter = component[Props]: _ =>
   val count = Var(0)
   val double = Var.memo(count() * 2)
+  Var.effect:
+    println(s"Count changed: ${count()}, Double: ${double()}")
 
   div(
-    h3("Signal Counter"),
-    p(s"Count: ${count()}"),
-    p(s"Double: ${double()}"),
-    button(
-      "onClick" := (_ => count(_ + 1)),
-      "Increment"
+    "cls" := "bg-white rounded-xl shadow-md p-6 border border-gray-200",
+    h3(
+      "cls" := "text-lg font-semibold text-gray-800 mb-4",
+      "Signal Counter"
     ),
-    button(
-      "onClick" := (_ => count(_ - 1)),
-      "Decrement"
+    p(
+      "cls" := "text-gray-600 mb-2",
+      "Count: ",
+      count
+    ),
+    p(
+      "cls" := "text-gray-600 mb-4",
+      "Double: ",
+      double
+    ),
+    div(
+      "cls" := "flex gap-3",
+      button(
+        "cls" := "px-4 py-2 rounded-lg bg-green-500 text-white font-medium hover:bg-green-600 transition-colors",
+        "onClick" := (_ => count(_ + 1)),
+        "Increment"
+      ),
+      button(
+        "cls" := "px-4 py-2 rounded-lg bg-red-500 text-white font-medium hover:bg-red-600 transition-colors",
+        "onClick" := (_ => count(_ - 1)),
+        "Decrement"
+      )
     )
   )
 
 // Component that displays and toggles global theme
-val ThemeDisplay = component[CounterProps]: _ =>
+val ThemeDisplay = component[Props]: _ =>
+  val isDark = globalTheme() == "dark"
   div(
-    "class" := "theme-display",
-    p(s"Current Theme: ${globalTheme()}"),
+    "cls" := "rounded-xl shadow-md p-6 border transition-colors duration-300",
+    "cls" := maybe(!isDark, "bg-white border-gray-200"),
+    "cls" := maybe(isDark, "bg-gray-800 border-gray-700"),
+    p(
+      "cls" := "mb-4 transition-colors duration-300",
+      "cls" := maybe(!isDark, cls("text-gray-600")),
+      "cls" := maybe(isDark, "text-gray-300"),
+      "Current Theme: ",
+      globalTheme
+    ),
     button(
+      "cls" := "px-4 py-2 rounded-lg font-medium transition-colors duration-300",
+      "cls" := maybe(!isDark, "bg-amber-500 hover:bg-amber-600 text-white"),
+      "cls" := maybe(isDark, "bg-yellow-400 hover:bg-yellow-500 text-gray-900"),
       "onClick" := (_ =>
         globalTheme(if globalTheme() == "light" then "dark" else "light")
       ),
-      "Toggle Theme"
+      if isDark then "Switch to Light" else "Switch to Dark"
     )
   )
 
 // === Application Rendering, where all the versions are tested ===
 
 def appContent =
+  Var.effect:
+    println(s"Theme changed: ${globalTheme()}")
+
   div(
-    "id" := "greeting", // id attribute
-    "class" := "container", // class attribute
+    "id" := "greeting",
+    "key" := "main-div",
+    "cls" := "min-h-screen p-8 bg-linear-to-br from-slate-50 to-slate-100",
+    "cls" := maybe(globalTheme() == "dark", "from-slate-800 to-slate-900"),
 
-    "This is a div element.", // child element
+    div(
+      "cls" := "max-w-4xl mx-auto space-y-6",
 
-    span(
-      "class" := "nested",
-      "Nested span child element."
-    ), // nested div as child
+      h3(
+        "cls" := "text-3xl font-bold text-gray-800 mb-6",
+        "Scala Preact Demo"
+      ),
 
-    // Button with disabled prop
-    button(
-      "disabled" := true,
-      "Disabled Button"
-    ),
+      p(
+        "cls" := "text-gray-600",
+        "This is a div element."
+      ), // child element
 
-    // Button with click handler
-    button(
-      "onClick" := (e => println("Button clicked!")),
-      "Click me"
-    ),
+      span(
+        "cls" := "nested",
+        "Nested span child element."
+      ), // nested div as child
 
-    // Card component with title and children
-    Card(
-      "title" := "My Card Title",
-      "This is the content of the card.",
-      div(
-        "A nested div inside the card.",
-        button(
-          "onClick" := (e => println("Nested button clicked!")),
-          "Nested Button"
+      // Button with disabled prop
+      button(
+        "cls" := "px-4 py-2 mx-2 rounded-lg bg-gray-300 text-gray-500 cursor-not-allowed",
+        "disabled" := true,
+        "Disabled Button"
+      ),
+
+      // Button with click handler
+      button(
+        "cls" := "px-4 py-2 mx-2 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors",
+        "onClick" := (e => println("Button clicked!")),
+        "Click me"
+      ),
+
+      // Card component with title and children
+      Card(
+        "title" := "My Card Title",
+        "key" := "card1", // Stable key to prevent remounting
+        "This is the content of the card.",
+        div(
+          "A nested div inside the card.",
+          button(
+            "cls" := "px-3 py-1.5 mx-2 rounded bg-emerald-500 text-white text-sm hover:bg-emerald-600 transition-colors",
+            "onClick" := (e => println("Nested button clicked!")),
+            "Nested Button"
+          )
         )
-      )
-    ),
+      ),
 
-    // Card component with title and children
-    Card(
-      "title" := "My Second Card with Footer",
-      "cls" := "highlighted", // Custom class for the second card
-      "footer" := "This is the footer text.",
-      "This is the content of the second card."
-    ),
+      // Card component with title and children
+      Card(
+        "title" := "My Second Card with Footer",
+        "cls" := "highlighted", // Custom class for the second card
+        "footer" := "This is the footer text.",
+        "This is the content of the second card."
+      ),
 
-    // Signal examples
-    h3("Signals Demo"),
-    SignalCounter(),
-    ThemeDisplay()
+      // Signal examples
+      h3(
+        "cls" := "text-xl font-semibold text-gray-800 mt-8",
+        "Signals Demo"
+      ),
+      SignalCounter(),
+      ThemeDisplay()
+    ) // close inner div
   )
 
 @JSExportTopLevel("renderApp")

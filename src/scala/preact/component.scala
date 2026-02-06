@@ -2,14 +2,23 @@ package preact.component
 
 import preact.bindings.*
 import preact.js_helpers.*
-import preact.signals.{VarContext, ComponentVarContext}
+import preact.signals.ComponentVarContext
+import preact.signals.VarContext
 
 import scala.quoted.*
 import scala.scalajs.js
 
 class AttributeModifier[Key <: String, Value](val key: Key, val value: Value):
   inline def apply(jsAttribs: js.Dynamic): Unit =
-    jsAttribs.updateDynamic(key)(value.asInstanceOf[js.Any])
+    if key == "cls" then
+      // Special handling for "cls" to concatenate multiple class values
+      if value != js.undefined && value != "" then
+        val existing = jsAttribs.selectDynamic(key)
+        val newValue =
+          if existing != js.undefined then s"$existing ${value}"
+          else value
+        jsAttribs.updateDynamic(key)(newValue.asInstanceOf[js.Any])
+    else jsAttribs.updateDynamic(key)(value.asInstanceOf[js.Any])
 
 extension [Key <: String, Value](key: Key)
   inline def :=(value: Value) = AttributeModifier(key, value)
@@ -32,30 +41,31 @@ given Conversion[VNode, ChildModifier]:
 
 // === Component Factory ===
 
+trait Props extends JS:
+  val key: Opt[String] // Dummy prop to satisfy component macro
+
 /** Base class for components with auto-derived Modifier type. The Modifier type
   * is refined by the `component` macro based on the Props type.
   */
-abstract class ComponentBase[P <: JS](renderFn: P => VNode):
+abstract class ComponentBase[P <: Props](renderFn: js.Function1[P, VNode]):
   type Modifier
 
   // Wrap render function ONCE to inject ComponentVarContext for signals
   // This must be a stable reference so Preact doesn't remount the component
-  private val wrappedRenderFn: P => VNode = (props: P) =>
-    println(s"[ComponentBase] Rendering component with ComponentVarContext")
+  private val wrappedRenderFn: js.Function1[P, VNode] = (props: P) =>
+    // println(s"[ComponentBase] Rendering component with ComponentVarContext")
     // Set dynamic context for this render - this affects Var() calls at runtime
-    preact.signals.withContext(ComponentVarContext) {
+    preact.signals.withContext(ComponentVarContext):
       renderFn(props)
-    }
 
   def apply(ms: Modifier*): VNode =
     val attrs = js.Dynamic.literal()
     val children = js.Array[Child]()
-    ms.foreach {
+    ms.foreach:
       case am: AttributeModifier[?, ?] =>
         am(attrs)
       case cm: ChildModifier =>
         cm(children)
-    }
 
     h(wrappedRenderFn, attrs, children)
 
@@ -73,7 +83,7 @@ abstract class ComponentBase[P <: JS](renderFn: P => VNode):
   * // Usage: MyComponent("title" := "Hello", "count" := 42)
   * }}}
   */
-transparent inline def component[P <: JS](inline renderFn: P => VNode): Any =
+transparent inline def component[P <: Props](inline renderFn: P => VNode): Any =
   ${ componentImpl[P]('renderFn) }
 
 private def componentImpl[P: Type](
@@ -92,17 +102,15 @@ private def componentImpl[P: Type](
   val attrModSymbol = Symbol.requiredClass("preact.component.AttributeModifier")
 
   // Separate children field from other fields
-  val (childrenFields, otherFields) = fields.partition { fieldSym =>
+  val (childrenFields, otherFields) = fields.partition: fieldSym =>
     fieldSym.name == "children" && tpe.memberType(fieldSym) =:= childrenType
-  }
 
   // Build AttributeModifier[fieldName, fieldType] for non-children fields
-  val fieldTypes: List[TypeRepr] = otherFields.map { fieldSym =>
+  val fieldTypes: List[TypeRepr] = otherFields.map: fieldSym =>
     val fieldName = fieldSym.name
     val memberType = tpe.memberType(fieldSym)
     val fieldNameType = ConstantType(StringConstant(fieldName))
     AppliedType(attrModSymbol.typeRef, List(fieldNameType, memberType))
-  }
 
   // Only add ChildModifier if there's a children: Children field
   val allTypes =
@@ -120,7 +128,7 @@ private def componentImpl[P: Type](
   (tpe.asType, unionType.asType) match
     case ('[p], '[modifierType]) =>
       '{
-        new ComponentBase[p & JS]($renderFn.asInstanceOf[p & JS => VNode]):
+        new ComponentBase[p & Props]($renderFn.asInstanceOf[p & JS => VNode]):
           type Modifier = modifierType
       }
     case _ =>
