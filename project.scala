@@ -9,3 +9,6 @@
 //> using dep org.scala-js::scalajs-dom::2.8.1
 
 //> using test.dep org.scalameta::munit::1.2.1
+
+//> using exclude tmp/**
+//> using exclude codegen/**

@@ -3,55 +3,13 @@ package preact.test
 import org.scalajs.dom
 import preact.bindings.*
 import preact.component.{*, given}
+import preact.html.HtmlTags.*
 import preact.js_helpers.*
 import preact.signals.{*, given}
 
 import scala.deriving.Mirror
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSExportTopLevel
-
-def buildinTagWithChildren[
-    Modifier <: AttributeModifier[?, ?] | ChildModifier
-](
-    tag: String,
-    modifiers: Seq[Modifier]
-): VNode =
-  var jsAttribs = js.Dynamic.literal()
-  var childrenArray = js.Array[Child]()
-
-  modifiers.foreach:
-    case am: AttributeModifier[?, ?] =>
-      if am.key == "cls" then
-        // Special handling for "cls" to concatenate multiple class values
-        if am.value != js.undefined && am.value != "" then
-          val existing = jsAttribs.selectDynamic("class")
-          val newValue =
-            if existing != js.undefined then s"$existing ${am.value}"
-            else am.value
-          jsAttribs.updateDynamic("class")(newValue.asInstanceOf[js.Any])
-      else am(jsAttribs)
-
-    case cm: ChildModifier =>
-      cm(childrenArray)
-
-  h(tag, jsAttribs, childrenArray)
-
-object DomElement:
-  type Key = AttributeModifier["key", String]
-  type Id = AttributeModifier["id", String]
-  type Cls = AttributeModifier["cls", Opt[String]]
-  type Disabled = AttributeModifier["disabled", Boolean]
-  type OnClick =
-    AttributeModifier["onClick", js.Function1[dom.MouseEvent, Unit]]
-
-  type Modifier = Id | Key | Cls | Disabled | OnClick | ChildModifier
-
-inline def div(ms: DomElement.Modifier*) = buildinTagWithChildren("div", ms)
-inline def span(ms: DomElement.Modifier*) = buildinTagWithChildren("span", ms)
-inline def h3(ms: DomElement.Modifier*) = buildinTagWithChildren("h3", ms)
-inline def p(ms: DomElement.Modifier*) = buildinTagWithChildren("p", ms)
-inline def button(ms: DomElement.Modifier*) =
-  buildinTagWithChildren("button", ms)
 
 // === Component API Examples ===
 
@@ -151,6 +109,138 @@ val ThemeDisplay = component[Props]: _ =>
     )
   )
 
+// === Form Example ===
+
+val ContactForm = component[Props]: _ =>
+  val name = Var("")
+  val email = Var("")
+  val message = Var("")
+  val submitted = Var(false)
+
+  def handleSubmit(e: dom.Event): Unit =
+    e.preventDefault()
+    println(
+      s"Form submitted: name=${name()}, email=${email()}, message=${message()}"
+    )
+    submitted(true)
+
+  div(
+    "cls" := "bg-white rounded-xl shadow-md p-6 border border-gray-200",
+    h3(
+      "cls" := "text-lg font-semibold text-gray-800 mb-4",
+      "Contact Form"
+    ),
+    if submitted() then
+      div(
+        "cls" := "text-green-600 font-medium",
+        "Thank you for your message!"
+      )
+    else
+      form(
+        "onSubmit" := ((e: dom.Event) => handleSubmit(e)),
+        "cls" := "space-y-4",
+        div(
+          label(
+            "for" := "name",
+            "cls" := "block text-sm font-medium text-gray-700 mb-1",
+            "Name"
+          ),
+          input(
+            "type" := "text",
+            "id" := "name",
+            "name" := "name",
+            "placeholder" := "Your name",
+            "required" := true,
+            "cls" := "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+            "onInput" := ((e: dom.Event) =>
+              name(e.target.asInstanceOf[dom.html.Input].value)
+            )
+          )
+        ),
+        div(
+          label(
+            "for" := "email",
+            "cls" := "block text-sm font-medium text-gray-700 mb-1",
+            "Email"
+          ),
+          input(
+            "type" := "email",
+            "id" := "email",
+            "name" := "email",
+            "placeholder" := "you@example.com",
+            "required" := true,
+            "cls" := "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+            "onInput" := ((e: dom.Event) =>
+              email(e.target.asInstanceOf[dom.html.Input].value)
+            )
+          )
+        ),
+        div(
+          label(
+            "for" := "message",
+            "cls" := "block text-sm font-medium text-gray-700 mb-1",
+            "Message"
+          ),
+          textArea(
+            "id" := "message",
+            "name" := "message",
+            "placeholder" := "Your message...",
+            "rows" := 4,
+            "cls" := "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+            "onInput" := ((e: dom.Event) =>
+              message(e.target.asInstanceOf[dom.html.TextArea].value)
+            )
+          )
+        ),
+        button(
+          "type" := "submit",
+          "cls" := "w-full px-4 py-2 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition-colors",
+          "Send Message"
+        )
+      )
+  )
+
+// === Navigation Links Example ===
+
+val NavLinks = component[Props]: _ =>
+  nav(
+    "cls" := "bg-white rounded-xl shadow-md p-4 border border-gray-200",
+    ul(
+      "cls" := "flex gap-6",
+      li(
+        a(
+          "href" := "/",
+          "cls" := "text-blue-600 hover:text-blue-800 font-medium transition-colors",
+          "Home"
+        )
+      ),
+      li(
+        a(
+          "href" := "/about",
+          "cls" := "text-blue-600 hover:text-blue-800 font-medium transition-colors",
+          "About"
+        )
+      ),
+      li(
+        a(
+          "href" := "/contact",
+          "cls" := "text-blue-600 hover:text-blue-800 font-medium transition-colors",
+          "Contact"
+        )
+      ),
+      li(
+        a(
+          "href" := "https://github.com",
+          "target" := "_blank",
+          "rel" := "noopener noreferrer",
+          "cls" := "text-blue-600 hover:text-blue-800 font-medium transition-colors",
+          "GitHub ",
+          span("cls" := "text-xs", "↗")
+        )
+      )
+    )
+  )
+
 // === Application Rendering, where all the versions are tested ===
 
 def appContent =
@@ -224,7 +314,22 @@ def appContent =
         "Signals Demo"
       ),
       SignalCounter(),
-      ThemeDisplay()
+      ThemeDisplay(),
+
+      // Navigation links example
+      h3(
+        "cls" := "text-xl font-semibold text-gray-800 mt-8",
+        "Navigation Links"
+      ),
+      NavLinks(),
+
+      // Form example
+      h3(
+        "cls" := "text-xl font-semibold text-gray-800 mt-8",
+        "Form Example"
+      ),
+
+      ContactForm()
     ) // close inner div
   )
 

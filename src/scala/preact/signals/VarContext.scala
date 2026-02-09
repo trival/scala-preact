@@ -1,5 +1,7 @@
 package preact.signals
 
+import preact.bindings.*
+
 /** Context that provides methods for creating reactive Vars. Different
   * implementations provide global (signal) or component-local (useSignal)
   * variants.

@@ -1,7 +1,6 @@
 package preact.signals
 
-import preact.bindings.Child
-import preact.bindings.VNode
+import preact.bindings.*
 import preact.component.ChildModifier
 
 import scala.scalajs.js
